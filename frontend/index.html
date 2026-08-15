@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="index.css?v=7" />
+  <link rel="stylesheet" href="index.css?v=8" />
 </head>
 <body>
 
@@ -293,7 +293,14 @@
             <span class="avatar-picker-item" onclick="changeUserAvatar('🍿')">🍿</span>
             <span class="avatar-picker-item" onclick="changeUserAvatar('👾')">👾</span>
             <span class="avatar-picker-item" onclick="changeUserAvatar('⚡')">⚡</span>
-          </div>
+        </div>
+        
+        <!-- Custom API Key Section -->
+        <div class="avatar-picker" style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px;">
+          <span>Custom OMDb API Key</span>
+          <input type="text" id="customApiKeyInput" placeholder="Paste your OMDb API key here..." 
+            style="width:100%; background:var(--bg2); border:1px solid var(--border); border-radius:6px; padding:8px 10px; color:var(--text); font-size:12px; margin-top:6px;"
+            oninput="saveCustomApiKey(this.value)" />
         </div>
       </div>
       
@@ -606,7 +613,10 @@ function enrichMovie(movie) {
 // ═══════════════════════════════════════════════════════
 // CONFIG — OMDB API
 // ═══════════════════════════════════════════════════════
-const OMDB_KEY  = 'a29b2451';
+const DEFAULT_OMDB_KEY = 'a29b2451';
+function getOmdbKey() {
+  return localStorage.getItem('omdb_custom_key') || DEFAULT_OMDB_KEY;
+}
 const OMDB_BASE = 'https://www.omdbapi.com/';
 const BACKEND   = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:5000/api'
@@ -1048,7 +1058,7 @@ window.addEventListener('click', (e) => {
 async function omdbByTitle(title) {
   if (omdbCache[title]) return omdbCache[title];
   try {
-    const url = `${OMDB_BASE}?apikey=${OMDB_KEY}&t=${encodeURIComponent(title)}&type=movie&plot=full`;
+    const url = `${OMDB_BASE}?apikey=${getOmdbKey()}&t=${encodeURIComponent(title)}&type=movie&plot=full`;
     const res  = await fetch(url);
     const data = await res.json();
     if (data.Response === 'True') {
@@ -1065,7 +1075,7 @@ async function omdbByTitle(title) {
 async function omdbById(imdbId) {
   if (omdbCache[imdbId]) return omdbCache[imdbId];
   try {
-    const url = `${OMDB_BASE}?apikey=${OMDB_KEY}&i=${imdbId}&type=movie&plot=full`;
+    const url = `${OMDB_BASE}?apikey=${getOmdbKey()}&i=${imdbId}&type=movie&plot=full`;
     const res  = await fetch(url);
     const data = await res.json();
     if (data.Response === 'True') {
@@ -1080,7 +1090,7 @@ async function omdbById(imdbId) {
 /** Search OMDB by keyword — returns array of results (basic info, no full plot) */
 async function omdbSearch(query, page = 1) {
   try {
-    const url = `${OMDB_BASE}?apikey=${OMDB_KEY}&s=${encodeURIComponent(query)}&type=movie&page=${page}`;
+    const url = `${OMDB_BASE}?apikey=${getOmdbKey()}&s=${encodeURIComponent(query)}&type=movie&page=${page}`;
     const res  = await fetch(url);
     const data = await res.json();
     if (data.Response === 'True') {
@@ -1938,6 +1948,20 @@ async function loadProfile() {
       : (document.getElementById('profileWatchlist').innerHTML =
           `<div class="empty-state"><div class="emoji">📋</div><p>Watchlist is empty</p></div>`);
   }
+  const keyInput = document.getElementById('customApiKeyInput');
+  if (keyInput) {
+    keyInput.value = localStorage.getItem('omdb_custom_key') || '';
+  }
+}
+
+function saveCustomApiKey(val) {
+  const cleanVal = val.trim();
+  if (cleanVal) {
+    localStorage.setItem('omdb_custom_key', cleanVal);
+  } else {
+    localStorage.removeItem('omdb_custom_key');
+  }
+  showToast('Custom API key saved!', 'success');
 }
 
 function renderProfileGenres() {
