@@ -1,0 +1,2026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OMDB - A Movie Recommender</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="index.css?v=7" />
+</head>
+<body>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Navbar -->
+<nav class="navbar" id="navbar">
+  <div class="nav-logo">OM<span>DB</span></div>
+  <button class="mobile-menu-btn" onclick="toggleMobileMenu()" id="mobileMenuBtn">☰</button>
+  <div class="nav-links" id="navLinks">
+    <!-- Populated by JS -->
+  </div>
+</nav>
+
+<!-- Pages -->
+<div id="page-landing" class="page active">
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-grid"></div>
+    <div class="hero-content animate-in">
+      <div class="hero-tag">🎬 AI-Powered Recommendations</div>
+      <h1 class="display">Your Perfect<span>Movie Awaits</span></h1>
+      <p class="hero-desc">Discover films tailored to your taste. Powered by personalized algorithms that learn what you love.</p>
+      <div class="hero-btns">
+        <button class="btn btn-primary" onclick="navigate('register')">🚀 Get Started Free</button>
+        <button class="btn btn-secondary" onclick="navigate('dashboard')">Explore Movies</button>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><div class="stat-num">15K+</div><div class="stat-label">Movies</div></div>
+        <div class="stat"><div class="stat-num">50+</div><div class="stat-label">Genres</div></div>
+        <div class="stat"><div class="stat-num">99%</div><div class="stat-label">Accuracy</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Real-time Trending Preview Showcase -->
+  <section class="section" style="max-width: 1200px; margin: 0 auto 60px; padding: 0 32px;">
+    <div class="section-header">
+      <h2 class="section-title">🔥 Now Trending Preview</h2>
+      <a class="see-all" onclick="navigate('dashboard')">View Full Dashboard →</a>
+    </div>
+    <div id="landingTrendingRow" class="movies-row">
+      <!-- Populated dynamically by loadLandingPreview() -->
+    </div>
+  </section>
+
+  <!-- Features -->
+    <section class="features" id="features">
+        <h2 class="section-title text-center">Why OMDB?</h2>
+    <div class="features-grid">
+      <div class="feature-card"><div class="feature-icon">🎯</div><h3 class="feature-title">Smart Recommendations</h3><p class="feature-desc">Content-based filtering learns your genre preferences and suggests movies you'll actually love.</p></div>
+      <div class="feature-card"><div class="feature-icon">🔥</div><h3 class="feature-title">Trending Now</h3><p class="feature-desc">Stay current with what's hot. See what's trending globally and among your genre preferences.</p></div>
+      <div class="feature-card"><div class="feature-icon">🗂️</div><h3 class="feature-title">Watchlist & Favorites</h3><p class="feature-desc">Save movies to watch later or mark them as favorites. Your collection, your way.</p></div>
+      <div class="feature-card"><div class="feature-icon">🔍</div><h3 class="feature-title">Powerful Search</h3><p class="feature-desc">Find any movie instantly. Search by title, director, cast, or even mood and theme.</p></div>
+    </div>
+  </section>
+</div>
+
+<div id="page-login" class="page">
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h2>Welcome Back</h2>
+        <p>Sign in to your OMDB account</p>
+      </div>
+      <div id="loginError" class="form-error" style="margin-bottom:16px;display:none;"></div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="loginEmail" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="loginPassword" placeholder="••••••••" />
+      </div>
+      <button class="form-submit" id="loginBtn" onclick="handleLogin()">
+        Sign In
+      </button>
+      <div class="auth-footer">
+        Don't have an account? <a onclick="navigate('register')">Create one</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-register" class="page">
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h2>Join OMDB</h2>
+        <p>Create your account and start discovering</p>
+      </div>
+      <div id="registerError" class="form-error" style="margin-bottom:16px;display:none;"></div>
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input class="form-input" type="text" id="regName" placeholder="John Doe" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="regEmail" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="regPassword" placeholder="Min. 6 characters" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Favorite Genres (pick any)</label>
+        <div class="genre-select" id="regGenres">
+          <!-- populated by JS -->
+        </div>
+      </div>
+      <button class="form-submit" id="registerBtn" onclick="handleRegister()">
+        Create Account
+      </button>
+      <div class="auth-footer">
+        Already have an account? <a onclick="navigate('login')">Sign in</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-dashboard" class="page">
+  <div class="dashboard">
+    <!-- Featured Hero Showcase -->
+    <div id="dashboardHeroContainer"></div>
+    <div class="dashboard-header">
+      <div>
+        <p class="welcome" id="dashWelcome">Good evening!</p>
+        <h2 class="section-title" id="dashTitle">Discover Movies</h2>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-bar">
+      <span>🔍</span>
+      <input type="text" id="searchInput" placeholder="Search movies, directors, cast..." oninput="debounceSearch(this.value)" onkeyup="if(event.key==='Enter'){ clearTimeout(state.searchTimeout); performSearch(this.value); }" />
+      <button class="btn-icon" id="clearSearch" onclick="clearSearch()" style="display:none;">✕</button>
+    </div>
+
+    <!-- Genre Filter -->
+    <div class="genre-filter" id="genreFilter">
+      <button class="filter-chip active" onclick="filterByGenre('', this)">All</button>
+    </div>
+
+    <!-- AI Matchmaker Control Panel -->
+    <div class="matchmaker-card">
+      <div class="matchmaker-header" onclick="toggleMatchmaker()">
+        <div class="matchmaker-title-group">
+          <span class="matchmaker-icon">🧠</span>
+          <div>
+            <h3 class="matchmaker-title">AI Recommendation Matchmaker</h3>
+            <p class="matchmaker-subtitle">Refine by mood, watch situation, and cinematic DNA traits</p>
+          </div>
+        </div>
+        <button class="matchmaker-toggle-btn" id="matchmakerToggleBtn">▼ Show Filters</button>
+      </div>
+      
+      <div class="matchmaker-body hidden" id="matchmakerBody">
+        <div class="matchmaker-grid">
+          <!-- Mood Selection -->
+          <div class="matchmaker-section">
+            <label class="match-label">🎭 What is your mood?</label>
+            <div class="match-options" id="matchMoods"></div>
+          </div>
+          
+          <!-- Situation Selection -->
+          <div class="matchmaker-section">
+            <label class="match-label">👥 Who are you watching with?</label>
+            <div class="match-options" id="matchSituations"></div>
+          </div>
+          
+          <!-- DNA Selection -->
+          <div class="matchmaker-section">
+            <label class="match-label">🧬 Cinematic DNA Traits</label>
+            <div class="match-options" id="matchDna"></div>
+          </div>
+          
+          <!-- Rating Slider -->
+          <div class="matchmaker-section">
+            <label class="match-label flex justify-between">
+              <span>⭐ Minimum Rating</span>
+              <span id="matchRatingVal" class="mono text-gold" style="color:var(--gold); font-weight:600;">5.0</span>
+            </label>
+            <input type="range" id="matchRatingSlider" min="1.0" max="10.0" step="0.5" value="5.0" class="rating-slider" oninput="updateMatchmakerRating(this.value)" />
+          </div>
+
+          <!-- Year/Era Filter -->
+          <div class="matchmaker-section">
+            <label class="match-label">📅 Release Year / Era</label>
+            <div class="match-options" id="matchYears"></div>
+          </div>
+        </div>
+        
+        <div class="matchmaker-footer flex justify-between items-center mt-3" style="border-top: 1px solid var(--border); padding-top: 16px;">
+          <button class="btn btn-secondary btn-sm" onclick="resetMatchmaker()">Reset Filters</button>
+          <div class="match-active-status" id="matchStatusText" style="color: var(--text3); font-weight:500;">Filters inactive (showing default list)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search Results -->
+    <div id="searchResults" class="hidden">
+      <div class="section-header">
+        <h3 class="section-title" id="searchResultsTitle">Search Results</h3>
+      </div>
+      <div class="movies-grid" id="searchResultsGrid"></div>
+    </div>
+
+    <!-- Normal content (hidden during search) -->
+    <div id="normalContent">
+      <!-- Recommendations (only for logged in) -->
+      <div class="section" id="recommendationsSection" style="display:none;">
+        <div class="section-header">
+          <h3 class="section-title">🎯 For You</h3>
+        </div>
+        <div class="movies-row" id="recommendedMovies"></div>
+      </div>
+
+      <!-- Trending -->
+      <div class="section">
+        <div class="section-header">
+          <h3 class="section-title">🔥 Trending Now</h3>
+        </div>
+        <div class="movies-row" id="trendingMovies">
+          <div class="skeleton skeleton-card" style="min-width:160px;"></div>
+          <div class="skeleton skeleton-card" style="min-width:160px;"></div>
+          <div class="skeleton skeleton-card" style="min-width:160px;"></div>
+        </div>
+      </div>
+
+      <!-- All Movies -->
+      <div class="section">
+        <div class="section-header">
+          <h3 class="section-title" id="allMoviesTitle">All Movies</h3>
+        </div>
+        <div class="movies-grid" id="allMovies"></div>
+        <div class="text-center mt-3" id="loadMoreContainer" style="display:none;">
+          <button class="btn btn-secondary" onclick="loadMoreMovies()">Load More</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-profile" class="page">
+  <div class="profile-page">
+    <div class="profile-grid-layout">
+      
+      <!-- Left Side Column: User Identity Card -->
+      <div class="profile-sidebar-card">
+        <div class="profile-avatar-wrapper">
+          <div class="profile-avatar" id="profileAvatar">👤</div>
+        </div>
+        <h2 class="profile-name" id="profileName">User</h2>
+        <p class="profile-email" id="profileEmail">user@example.com</p>
+        <p class="profile-joined" id="profileJoined"></p>
+        
+        <div class="profile-stats">
+          <div class="profile-stat">
+            <span>Watchlist</span>
+            <strong id="statWatchlist">0</strong>
+          </div>
+          <div class="profile-stat">
+            <span>Favorites</span>
+            <strong id="statFavorites">0</strong>
+          </div>
+        </div>
+        
+        <!-- Avatar Picker -->
+        <div class="avatar-picker" id="avatarPickerContainer">
+          <span>Change Avatar</span>
+          <div class="avatar-picker-grid">
+            <span class="avatar-picker-item" onclick="changeUserAvatar('🦊')">🦊</span>
+            <span class="avatar-picker-item" onclick="changeUserAvatar('🐯')">🐯</span>
+            <span class="avatar-picker-item" onclick="changeUserAvatar('🤖')">🤖</span>
+            <span class="avatar-picker-item" onclick="changeUserAvatar('🛸')">🛸</span>
+            <span class="avatar-picker-item" onclick="changeUserAvatar('🎮')">🎮</span>
+            <span class="avatar-picker-item" onclick="changeUserAvatar('🚀')">🚀</span>
+            <span class="avatar-picker-item" onclick="changeUserAvatar('🎭')">🎭</span>
+            <span class="avatar-picker-item" onclick="changeUserAvatar('🧠')">🧠</span>
+            <span class="avatar-picker-item" onclick="changeUserAvatar('🕶️')">🕶️</span>
+            <span class="avatar-picker-item" onclick="changeUserAvatar('🍿')">🍿</span>
+            <span class="avatar-picker-item" onclick="changeUserAvatar('👾')">👾</span>
+            <span class="avatar-picker-item" onclick="changeUserAvatar('⚡')">⚡</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right Side Column: Settings & Collections -->
+      <div class="profile-main-content">
+        <!-- Genre Preferences -->
+        <div class="profile-section">
+          <h3>Genre Preferences</h3>
+          <p style="color:var(--text2);font-size:14px;margin-bottom:16px;">Select your favorite genres to get better recommendations.</p>
+          <div class="pref-grid" id="genrePrefs"></div>
+          <button class="btn btn-primary btn-sm mt-3" onclick="savePreferences()">Save Preferences</button>
+        </div>
+
+        <!-- Favorites -->
+        <div class="profile-section">
+          <h3>❤️ Favorites</h3>
+          <div class="movies-grid" id="profileFavorites">
+            <div class="empty-state"><div class="emoji">🎬</div><p>No favorites yet</p></div>
+          </div>
+        </div>
+
+        <!-- Watchlist -->
+        <div class="profile-section">
+          <h3>📋 Watchlist</h3>
+          <div class="movies-grid" id="profileWatchlist">
+            <div class="empty-state"><div class="emoji">📋</div><p>Your watchlist is empty</p></div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<!-- Movie Modal -->
+<div class="modal-overlay hidden" id="movieModal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header-backdrop" id="modalHeaderBackdrop">
+      <div class="modal-backdrop-overlay-blur"></div>
+      <button class="modal-close" onclick="closeMovieModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-content-grid">
+        <!-- Left Side: Poster -->
+        <div class="modal-poster-side" id="modalPosterSide"></div>
+        
+        <!-- Right Side: Details -->
+        <div class="modal-details-side">
+          <h2 class="modal-title" id="modalTitle"></h2>
+          <div class="modal-meta" id="modalMeta"></div>
+          <p class="modal-overview" id="modalOverview"></p>
+          
+          <!-- Custom Metadata (Mood, Situation, DNA) -->
+          <div class="modal-metadata-custom" id="modalCustomMetadata" style="margin-bottom: 20px;"></div>
+          
+          <div class="modal-cast" id="modalCast"></div>
+          <div class="modal-actions" id="modalActions"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// MOVIE DNA, MOOD, SITUATION METADATA & ENRICHMENT
+// ═══════════════════════════════════════════════════════
+const MOODS_LIST = ['Happy', 'Sad', 'Exciting', 'Thoughtful', 'Mind-bending', 'Scary', 'Romantic', 'Uplifting'];
+const SITUATIONS_LIST = ['Alone', 'With Friends', 'With Family', 'Date Night'];
+const DNA_LIST = ['Fast-paced', 'Dark Tone', 'Cerebral', 'Stylized Visuals', 'Emotional Depth'];
+
+const MOVIE_METADATA_PRESETS = {
+  'Inception': {
+    moods: ['Mind-bending', 'Exciting', 'Thoughtful'],
+    situations: ['Alone', 'With Friends'],
+    dna: ['Fast-paced', 'Cerebral', 'Mind-bending', 'Stylized Visuals']
+  },
+  'The Dark Knight': {
+    moods: ['Exciting', 'Dark', 'Suspenseful'],
+    situations: ['Alone', 'With Friends'],
+    dna: ['Fast-paced', 'Dark Tone', 'Cerebral', 'Stylized Visuals']
+  },
+  'Interstellar': {
+    moods: ['Thoughtful', 'Emotional', 'Mind-bending'],
+    situations: ['Alone', 'With Family'],
+    dna: ['Cerebral', 'Emotional Depth', 'Stylized Visuals']
+  },
+  'Parasite': {
+    moods: ['Dark', 'Suspenseful', 'Witty'],
+    situations: ['With Friends', 'Alone'],
+    dna: ['Dark Tone', 'Cerebral', 'Stylized Visuals']
+  },
+  'The Shawshank Redemption': {
+    moods: ['Uplifting', 'Emotional', 'Thoughtful'],
+    situations: ['Alone', 'With Friends', 'With Family'],
+    dna: ['Emotional Depth']
+  },
+  'Avengers: Endgame': {
+    moods: ['Exciting', 'Emotional', 'Uplifting'],
+    situations: ['With Friends', 'With Family'],
+    dna: ['Fast-paced', 'Emotional Depth', 'Stylized Visuals']
+  },
+  'The Grand Budapest Hotel': {
+    moods: ['Happy', 'Witty', 'Uplifting'],
+    situations: ['With Friends', 'Date Night'],
+    dna: ['Fast-paced', 'Stylized Visuals']
+  },
+  'Get Out': {
+    moods: ['Scary', 'Dark', 'Thoughtful'],
+    situations: ['With Friends', 'Alone'],
+    dna: ['Dark Tone', 'Cerebral']
+  },
+  'Spirited Away': {
+    moods: ['Happy', 'Emotional', 'Uplifting'],
+    situations: ['With Family', 'Alone'],
+    dna: ['Emotional Depth', 'Stylized Visuals']
+  },
+  'Mad Max: Fury Road': {
+    moods: ['Exciting', 'Dark'],
+    situations: ['With Friends'],
+    dna: ['Fast-paced', 'Dark Tone', 'Stylized Visuals']
+  },
+  'Pulp Fiction': {
+    moods: ['Witty', 'Dark', 'Exciting'],
+    situations: ['With Friends', 'Alone'],
+    dna: ['Fast-paced', 'Dark Tone', 'Stylized Visuals']
+  },
+  'Dune: Part Two': {
+    moods: ['Exciting', 'Thoughtful'],
+    situations: ['With Friends', 'Alone'],
+    dna: ['Cerebral', 'Stylized Visuals']
+  },
+  'Oppenheimer': {
+    moods: ['Thoughtful', 'Dark'],
+    situations: ['Alone', 'Date Night'],
+    dna: ['Cerebral', 'Dark Tone', 'Emotional Depth']
+  },
+  'Everything Everywhere All at Once': {
+    moods: ['Mind-bending', 'Witty', 'Emotional', 'Happy'],
+    situations: ['With Family', 'With Friends'],
+    dna: ['Fast-paced', 'Cerebral', 'Emotional Depth', 'Stylized Visuals']
+  },
+  'The Lion King': {
+    moods: ['Happy', 'Emotional', 'Uplifting'],
+    situations: ['With Family', 'Alone'],
+    dna: ['Emotional Depth']
+  },
+  'Arrival': {
+    moods: ['Thoughtful', 'Mind-bending', 'Emotional'],
+    situations: ['Alone', 'Date Night'],
+    dna: ['Cerebral', 'Emotional Depth', 'Stylized Visuals']
+  },
+  'Knives Out': {
+    moods: ['Witty', 'Exciting', 'Happy'],
+    situations: ['With Friends', 'With Family'],
+    dna: ['Fast-paced']
+  },
+  'The Godfather': {
+    moods: ['Dark', 'Thoughtful'],
+    situations: ['Alone', 'With Friends'],
+    dna: ['Cerebral', 'Dark Tone']
+  },
+  'Goodfellas': {
+    moods: ['Dark', 'Witty', 'Exciting'],
+    situations: ['With Friends', 'Alone'],
+    dna: ['Fast-paced', 'Dark Tone']
+  },
+  'Schindler\'s List': {
+    moods: ['Emotional', 'Sad', 'Thoughtful'],
+    situations: ['Alone', 'With Family'],
+    dna: ['Cerebral', 'Emotional Depth']
+  },
+  'Whiplash': {
+    moods: ['Exciting', 'Dark'],
+    situations: ['Alone', 'With Friends'],
+    dna: ['Fast-paced', 'Dark Tone', 'Emotional Depth']
+  },
+  'Gone Girl': {
+    moods: ['Dark', 'Mind-bending'],
+    situations: ['Alone', 'Date Night'],
+    dna: ['Dark Tone', 'Cerebral']
+  },
+  'The Martian': {
+    moods: ['Uplifting', 'Witty', 'Exciting'],
+    situations: ['With Friends', 'With Family'],
+    dna: ['Fast-paced']
+  },
+  'La La Land': {
+    moods: ['Romantic', 'Emotional', 'Happy'],
+    situations: ['Date Night', 'Alone'],
+    dna: ['Emotional Depth', 'Stylized Visuals']
+  },
+  'Hereditary': {
+    moods: ['Scary', 'Dark'],
+    situations: ['Alone', 'With Friends'],
+    dna: ['Dark Tone']
+  },
+  'Moonlight': {
+    moods: ['Emotional', 'Thoughtful', 'Sad'],
+    situations: ['Alone', 'Date Night'],
+    dna: ['Emotional Depth', 'Stylized Visuals']
+  },
+  'Blade Runner 2049': {
+    moods: ['Mind-bending', 'Thoughtful'],
+    situations: ['Alone', 'Date Night'],
+    dna: ['Cerebral', 'Stylized Visuals']
+  },
+  'A Quiet Place': {
+    moods: ['Scary', 'Emotional'],
+    situations: ['With Friends', 'With Family'],
+    dna: ['Emotional Depth']
+  },
+  'Marriage Story': {
+    moods: ['Emotional', 'Sad', 'Thoughtful'],
+    situations: ['Alone'],
+    dna: ['Emotional Depth']
+  },
+  'Joker': {
+    moods: ['Dark', 'Sad', 'Thoughtful'],
+    situations: ['Alone'],
+    dna: ['Dark Tone', 'Emotional Depth']
+  },
+  '1917': {
+    moods: ['Exciting', 'Dark'],
+    situations: ['With Friends', 'Alone'],
+    dna: ['Fast-paced', 'Stylized Visuals']
+  }
+};
+
+let matchState = {
+  active: false,
+  mood: '',
+  situation: '',
+  dnaTags: [],
+  minRating: 5.0,
+  yearEra: 'All'
+};
+
+function enrichMovie(movie) {
+  if (!movie) return null;
+  if (movie.moods && movie.moods.length > 0) return movie; // already enriched or from backend
+  
+  const title = movie.title || '';
+  const preset = MOVIE_METADATA_PRESETS[title];
+  if (preset) {
+    movie.moods = preset.moods;
+    movie.situations = preset.situations;
+    movie.dna = preset.dna;
+    return movie;
+  }
+  
+  // Fallback generation based on genres
+  const moods = [];
+  const situations = [];
+  const dna = [];
+  const genres = movie.genres || [];
+  
+  if (genres.includes('Comedy')) {
+    moods.push('Happy', 'Witty');
+    situations.push('With Friends');
+  }
+  if (genres.includes('Drama') || genres.includes('Biography')) {
+    moods.push('Thoughtful', 'Emotional');
+    situations.push('Alone');
+    dna.push('Emotional Depth');
+  }
+  if (genres.includes('Action') || genres.includes('Adventure') || genres.includes('Sci-Fi') || genres.includes('Science Fiction')) {
+    moods.push('Exciting');
+    situations.push('With Friends');
+    dna.push('Fast-paced');
+  }
+  if (genres.includes('Thriller') || genres.includes('Mystery') || genres.includes('Crime')) {
+    moods.push('Dark');
+    situations.push('Alone');
+    dna.push('Dark Tone');
+  }
+  if (genres.includes('Horror')) {
+    moods.push('Scary', 'Dark');
+    situations.push('With Friends');
+    dna.push('Dark Tone');
+  }
+  if (genres.includes('Family') || genres.includes('Animation')) {
+    moods.push('Happy', 'Uplifting');
+    situations.push('With Family');
+  }
+  if (genres.includes('Romance')) {
+    moods.push('Romantic');
+    situations.push('Date Night');
+    dna.push('Emotional Depth');
+  }
+  
+  if (movie.rating >= 8.0) {
+    dna.push('Cerebral');
+  }
+  if (movie.posterPath) {
+    dna.push('Stylized Visuals');
+  }
+  
+  // Clean defaults
+  if (moods.length === 0) moods.push('Thoughtful');
+  if (situations.length === 0) situations.push('Alone');
+  if (dna.length === 0) dna.push('Emotional Depth');
+  
+  movie.moods = [...new Set(moods)].slice(0, 3);
+  movie.situations = [...new Set(situations)].slice(0, 3);
+  movie.dna = [...new Set(dna)].slice(0, 4);
+  return movie;
+}
+
+// ═══════════════════════════════════════════════════════
+// CONFIG — OMDB API
+// ═══════════════════════════════════════════════════════
+const OMDB_KEY  = 'a29b2451';
+const OMDB_BASE = 'https://www.omdbapi.com/';
+const BACKEND   = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000/api'
+  : '/api'; // Proxied via vercel.json rewrite in production
+
+const GENRES = ['Action','Adventure','Animation','Biography','Comedy','Crime',
+                'Drama','Family','Fantasy','History','Horror','Music',
+                'Mystery','Romance','Sci-Fi','Thriller','Western'];
+
+// Curated title lists powering each section of the app
+const TRENDING_TITLES = [
+  'Inception','The Dark Knight','Interstellar','Oppenheimer','Dune: Part Two',
+  'Avengers: Endgame','Everything Everywhere All at Once','The Batman',
+  'Top Gun: Maverick','Spider-Man: No Way Home'
+];
+
+// Genre → representative titles (used for genre filter & recommendations)
+const GENRE_TITLES = {
+  Action:      ['Mad Max: Fury Road','John Wick','Mission: Impossible – Fallout','Die Hard','The Raid'],
+  Adventure:   ['Indiana Jones and the Raiders of the Lost Ark','Jurassic Park','The Revenant','Cast Away','Wild'],
+  Animation:   ['Spirited Away','WALL-E','Coco','The Lion King','Into the Spider-Verse'],
+  Biography:   ['Bohemian Rhapsody','The Social Network','Schindler\'s List','Jobs','Ford v Ferrari'],
+  Comedy:      ['The Grand Budapest Hotel','Superbad','Knives Out','Game Night','The Nice Guys'],
+  Crime:       ['Pulp Fiction','The Godfather','Goodfellas','No Country for Old Men','Heat'],
+  Drama:       ['The Shawshank Redemption','Parasite','Marriage Story','Moonlight','12 Years a Slave'],
+  Family:      ['Paddington 2','Encanto','The Incredibles','Moana','How to Train Your Dragon'],
+  Fantasy:     ['Pan\'s Labyrinth','The Princess Bride','Big Fish','Stardust','Willow'],
+  History:     ['Dunkirk','Lincoln','Braveheart','The King\'s Speech','Gandhi'],
+  Horror:      ['Get Out','Hereditary','A Quiet Place','The Witch','Midsommar'],
+  Music:       ['Whiplash','Almost Famous','Rocketman','La La Land','8 Mile'],
+  Mystery:     ['Prisoners','Gone Girl','Shutter Island','Zodiac','The Girl with the Dragon Tattoo'],
+  Romance:     ['Before Sunrise','Eternal Sunshine of the Spotless Mind','Normal People','Her','About Time'],
+  'Sci-Fi':    ['Arrival','2001: A Space Odyssey','Ex Machina','Blade Runner 2049','The Martian'],
+  Thriller:    ['Parasite','Gone Girl','Sicario','Nightcrawler','Uncut Gems'],
+  Western:     ['No Country for Old Men','True Grit','Django Unchained','Tombstone','Unforgiven']
+};
+
+// All browse titles (shown in "All Movies" grid by default)
+const ALL_TITLES = [
+  'Inception','The Dark Knight','Interstellar','Parasite','The Shawshank Redemption',
+  'Avengers: Endgame','Spirited Away','Dune: Part Two','Oppenheimer',
+  'Everything Everywhere All at Once','Pulp Fiction','Get Out',
+  'The Grand Budapest Hotel','Mad Max: Fury Road','Arrival',
+  'Knives Out','The Godfather','Goodfellas','Schindler\'s List','Whiplash',
+  'Gone Girl','The Martian','La La Land','Hereditary','Moonlight',
+  'Blade Runner 2049','A Quiet Place','Marriage Story','Joker','1917'
+];
+
+// ── In-memory store for watchlist/favorites (persisted to localStorage) ──
+let localWatchlist = JSON.parse(localStorage.getItem('omdb_watchlist') || '[]');
+// shape: [{ movieId, type, movie }]
+
+// ── OMDB movie cache: imdbID → full movie object ──
+const omdbCache = {};
+
+let state = {
+  user:           null,
+  token:          null,
+  currentPage:    'landing',
+  movies:         [],          // currently rendered all-movies list
+  trendingMovies: [],
+  omdbPage:       1,           // which chunk of ALL_TITLES we're on
+  currentGenre:   '',
+  selectedLanguage: 'All',     // selected language filter
+  searchTimeout:  null,
+  selectedGenres: [],          // register form
+  profileGenres:  []           // profile prefs editor
+};
+
+// ═══════════════════════════════════════════════════════
+// AI MATCHMAKER LOGIC
+// ═══════════════════════════════════════════════════════
+function toggleMatchmaker() {
+  const body = document.getElementById('matchmakerBody');
+  const btn = document.getElementById('matchmakerToggleBtn');
+  if (body.classList.contains('hidden')) {
+    body.classList.remove('hidden');
+    btn.textContent = '▲ Hide Filters';
+  } else {
+    body.classList.add('hidden');
+    btn.textContent = '▼ Show Filters';
+  }
+}
+
+function toggleMatchMood(mood, btn) {
+  if (matchState.mood === mood) {
+    matchState.mood = '';
+    btn.classList.remove('selected');
+  } else {
+    matchState.mood = mood;
+    // Remove selected class from other moods
+    document.querySelectorAll('#matchMoods .match-chip').forEach(c => c.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+  applyMatchmaker();
+}
+
+function toggleMatchSituation(situation, btn) {
+  if (matchState.situation === situation) {
+    matchState.situation = '';
+    btn.classList.remove('selected');
+  } else {
+    matchState.situation = situation;
+    // Remove selected class from other situations
+    document.querySelectorAll('#matchSituations .match-chip').forEach(c => c.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+  applyMatchmaker();
+}
+
+function toggleMatchDna(tag, btn) {
+  const idx = matchState.dnaTags.indexOf(tag);
+  if (idx >= 0) {
+    matchState.dnaTags.splice(idx, 1);
+    btn.classList.remove('selected');
+  } else {
+    matchState.dnaTags.push(tag);
+    btn.classList.add('selected');
+  }
+  applyMatchmaker();
+}
+
+function updateMatchmakerRating(val) {
+  const minRating = parseFloat(val);
+  matchState.minRating = minRating;
+  document.getElementById('matchRatingVal').textContent = minRating.toFixed(1);
+  applyMatchmaker();
+}
+
+function updateMatchStatusText() {
+  const statusText = document.getElementById('matchStatusText');
+  const isFilterActive = matchState.mood || matchState.situation || matchState.dnaTags.length > 0 || matchState.minRating > 1.0 || (matchState.yearEra && matchState.yearEra !== 'All');
+  if (isFilterActive) {
+    statusText.innerHTML = `🟢 <strong>Matchmaker Active</strong>: Sorting by compatibility`;
+    statusText.style.color = 'var(--success)';
+  } else {
+    statusText.innerHTML = `Filters inactive (showing default list)`;
+    statusText.style.color = 'var(--text3)';
+  }
+}
+
+function resetMatchmaker() {
+  matchState = {
+    active: false,
+    mood: '',
+    situation: '',
+    dnaTags: [],
+    minRating: 5.0,
+    yearEra: 'All'
+  };
+  
+  // Reset UI chips class
+  document.querySelectorAll('.matchmaker-card .match-chip').forEach(c => c.classList.remove('selected'));
+  
+  // Reset slider
+  const slider = document.getElementById('matchRatingSlider');
+  if (slider) slider.value = 5.0;
+  
+  const ratingVal = document.getElementById('matchRatingVal');
+  if (ratingVal) ratingVal.textContent = '5.0';
+  
+  applyMatchmaker();
+}
+
+function toggleMatchYear(year, btn) {
+  matchState.yearEra = year;
+  document.querySelectorAll('#matchYears .match-chip').forEach(c => c.classList.remove('selected'));
+  if (btn) btn.classList.add('selected');
+  applyMatchmaker();
+}
+
+function calculateAccuracy(movie) {
+  let score = 0;
+  let totalWeights = 0;
+  
+  // 1. Mood weight: 25%
+  if (matchState.mood) {
+    totalWeights += 25;
+    if (movie.moods && movie.moods.includes(matchState.mood)) {
+      score += 25;
+    }
+  }
+  
+  // 2. Situation weight: 25%
+  if (matchState.situation) {
+    totalWeights += 25;
+    if (movie.situations && movie.situations.includes(matchState.situation)) {
+      score += 25;
+    }
+  }
+  
+  // 3. DNA weight: 20%
+  if (matchState.dnaTags && matchState.dnaTags.length > 0) {
+    totalWeights += 20;
+    let matchCount = 0;
+    matchState.dnaTags.forEach(tag => {
+      if (movie.dna && movie.dna.includes(tag)) {
+        matchCount++;
+      }
+    });
+    score += 20 * (matchCount / matchState.dnaTags.length);
+  }
+  
+  // 4. Year/Era weight: 15%
+  if (matchState.yearEra && matchState.yearEra !== 'All') {
+    totalWeights += 15;
+    const year = movie.releaseYear;
+    let matched = false;
+    if (matchState.yearEra === '2020s' && year >= 2020) matched = true;
+    else if (matchState.yearEra === '2010s' && year >= 2010 && year < 2020) matched = true;
+    else if (matchState.yearEra === '2000s' && year >= 2000 && year < 2010) matched = true;
+    else if (matchState.yearEra === 'Classic (90s & Older)' && year < 2000) matched = true;
+    
+    if (matched) score += 15;
+  }
+  
+  // 5. Rating weight: 15%
+  if (matchState.minRating > 1.0) {
+    totalWeights += 15;
+    if (movie.rating >= matchState.minRating) {
+      score += 15;
+    } else {
+      const diff = matchState.minRating - movie.rating;
+      const penalty = Math.max(0, 15 - (diff * 5));
+      score += penalty;
+    }
+  }
+
+  // 6. Genre weight: 10%
+  if (state.currentGenre) {
+    totalWeights += 10;
+    if (movie.genres && movie.genres.includes(state.currentGenre)) {
+      score += 10;
+    }
+  }
+  
+  if (totalWeights === 0) return 100;
+  return Math.round((score / totalWeights) * 100);
+}
+
+async function applyMatchmaker() {
+  const isFilterActive = matchState.mood || matchState.situation || matchState.dnaTags.length > 0 || matchState.minRating > 1.0;
+  updateMatchStatusText();
+  
+  if (!isFilterActive) {
+    matchState.active = false;
+    document.getElementById('allMoviesTitle').textContent = state.currentGenre || 'All Movies';
+    document.getElementById('loadMoreContainer').style.display = 'block';
+    renderMoviesGrid('allMovies', state.movies);
+    return;
+  }
+  
+  matchState.active = true;
+  document.getElementById('loadMoreContainer').style.display = 'none'; // hide load more during matching
+  showSkeletons('allMovies', 8);
+  
+  // Gather all unique titles from pools to calculate matching scores
+  const allPossibleTitles = [...new Set([
+    ...ALL_TITLES,
+    ...TRENDING_TITLES,
+    ...Object.values(GENRE_TITLES).flat()
+  ])];
+  
+  // Fetch details (cached)
+  const fullPool = await omdbMulti(allPossibleTitles);
+  
+  // Calculate accuracy for each
+  fullPool.forEach(m => {
+    m.matchAccuracy = calculateAccuracy(m);
+  });
+  
+  // Filter movies that have at least 40% match
+  let results = fullPool.filter(m => m.matchAccuracy >= 40);
+  
+  // Sort descending
+  results.sort((a, b) => b.matchAccuracy - a.matchAccuracy);
+  
+  // Render
+  document.getElementById('allMoviesTitle').textContent = `🎯 Matchmaker Results (${results.length} movies matched)`;
+  renderMoviesGrid('allMovies', results);
+}
+
+function initMatchmakerUI() {
+  // Render Moods
+  const moodContainer = document.getElementById('matchMoods');
+  if (moodContainer) {
+    moodContainer.innerHTML = MOODS_LIST.map(m => {
+      const activeClass = matchState.mood === m ? 'selected' : '';
+      return `<button class="match-chip ${activeClass}" onclick="toggleMatchMood('${m}', this)">${m}</button>`;
+    }).join('');
+  }
+  
+  // Render Situations
+  const sitContainer = document.getElementById('matchSituations');
+  if (sitContainer) {
+    sitContainer.innerHTML = SITUATIONS_LIST.map(s => {
+      const activeClass = matchState.situation === s ? 'selected' : '';
+      return `<button class="match-chip ${activeClass}" onclick="toggleMatchSituation('${s}', this)">${s}</button>`;
+    }).join('');
+  }
+  
+  // Render DNA
+  const dnaContainer = document.getElementById('matchDna');
+  if (dnaContainer) {
+    dnaContainer.innerHTML = DNA_LIST.map(d => {
+      const activeClass = matchState.dnaTags.includes(d) ? 'selected' : '';
+      return `<button class="match-chip ${activeClass}" onclick="toggleMatchDna('${d}', this)">${d}</button>`;
+    }).join('');
+  }
+
+  // Render Years
+  const YEARS_LIST = ['All', '2020s', '2010s', '2000s', 'Classic (90s & Older)'];
+  const yearContainer = document.getElementById('matchYears');
+  if (yearContainer) {
+    yearContainer.innerHTML = YEARS_LIST.map(y => {
+      const activeClass = matchState.yearEra === y ? 'selected' : '';
+      return `<button class="match-chip ${activeClass}" onclick="toggleMatchYear('${y}', this)">${y}</button>`;
+    }).join('');
+  }
+
+  // Set Slider
+  const slider = document.getElementById('matchRatingSlider');
+  if (slider) {
+    slider.value = matchState.minRating;
+  }
+  const ratingVal = document.getElementById('matchRatingVal');
+  if (ratingVal) {
+    ratingVal.textContent = matchState.minRating.toFixed(1);
+  }
+
+  updateMatchStatusText();
+}
+
+// ═══════════════════════════════════════════════════════
+// SEARCHABLE LANGUAGE SELECTOR LOGIC
+// ═══════════════════════════════════════════════════════
+const LANGUAGES_LIST = [
+  'English', 'Telugu', 'Hindi', 'Tamil', 'Kannada', 'Malayalam', 
+  'Bengali', 'Marathi', 'Punjabi', 'Gujarati', 'Korean', 'Japanese', 
+  'Spanish', 'French', 'German', 'Chinese', 'Other'
+];
+
+const LANGUAGE_PRESETS = {
+  English: ['Inception', 'The Dark Knight', 'Interstellar', 'Pulp Fiction', 'The Shawshank Redemption', 'Gladiator', 'The Matrix', 'Avatar'],
+  Telugu: ['Baahubali: The Beginning', 'Baahubali 2: The Conclusion', 'RRR', 'Pushpa: The Rise', 'Arjun Reddy', 'Eega', 'Sita Ramam', 'Ala Vaikunthapurramuloo'],
+  Hindi: ['3 Idiots', 'Dangal', 'Sholay', 'Lagaan', 'Dilwale Dulhania Le Jayenge', 'Gangs of Wasseypur', 'Bajrangi Bhaijaan', 'My Name Is Khan', 'Jawan', 'Pathaan'],
+  Tamil: ['Vikram', 'Ponniyin Selvan: Part 1', 'Jai Bhim', 'Asuran', 'Sivaji: The Boss', 'Enthiran', 'Kaithi', 'Nayagan'],
+  Kannada: ['K.G.F: Chapter 1', 'K.G.F: Chapter 2', 'Kantara', '777 Charlie', 'Vikrant Rona', 'Ulidavaru Kandanthe'],
+  Malayalam: ['Drishyam', 'Drishyam 2', 'Kumbalangi Nights', 'Premam', 'Bangalore Days', 'Manjummel Boys', 'Lucifer', 'Minnal Murali'],
+  Bengali: ['Pather Panchali', 'Charulata', 'Apur Sansar', 'Mahanagar', 'Chokher Bali', 'Belaseshe'],
+  Marathi: ['Sairat', 'Natsamrat', 'Court', 'Killa', 'Harishchandrachi Factory', 'Lay Bhaari'],
+  Punjabi: ['Carry on Jatta', 'Angrej', 'Jatt & Juliet', 'Qismat', 'Sufna', 'Legend of Maula Jatt'],
+  Gujarati: ['Chhello Show', 'Bey Yaar', 'Wrong Side Raju', 'Naadi Dosh'],
+  Korean: ['Parasite', 'Oldboy', 'Train to Busan', 'Decision to Leave', 'The Handmaiden', 'Memories of Murder', 'Burning', 'Extreme Job'],
+  Japanese: ['Spirited Away', 'Seven Samurai', 'Your Name', 'Princess Mononoke', 'My Neighbor Totoro', 'Shoplifters', 'Drive My Car', 'Ran'],
+  Spanish: ['Roma', 'Pan\'s Labyrinth', 'The Secret in Their Eyes', 'Wild Tales', 'Biutiful', 'The Skin I Live In'],
+  French: ['Amélie', 'The Intouchables', 'La Haine', 'Portrait of a Lady on Fire', 'Breathless', 'Amour'],
+  German: ['The Lives of Others', 'Run Lola Run', 'Downfall', 'Good Bye Lenin!', 'Das Boot', 'Metropolis'],
+  Chinese: ['Crouching Tiger, Hidden Dragon', 'In the Mood for Love', 'Hero', 'Farewell My Concubine', 'House of Flying Daggers', 'The Farewell'],
+  Other: ['City of God', 'Life Is Beautiful', 'Cinema Paradiso', 'The Hunt', 'A Separation']
+};
+
+function toggleLangDropdown(event) {
+  event.stopPropagation();
+  const menu = document.getElementById('globalLangMenu');
+  if (menu) {
+    const isHidden = menu.classList.contains('hidden');
+    // Hide any other active dropdowns
+    document.querySelectorAll('.lang-dropdown-menu').forEach(m => m.classList.add('hidden'));
+    
+    if (isHidden) {
+      menu.classList.remove('hidden');
+      // Focus and reset search
+      const searchInput = document.getElementById('langSearchInput');
+      if (searchInput) {
+        searchInput.value = '';
+        filterLanguages('');
+        setTimeout(() => searchInput.focus(), 50);
+      }
+    }
+  }
+}
+
+function filterLanguages(query) {
+  const container = document.getElementById('langOptionsList');
+  if (!container) return;
+  
+  const searchLower = query.toLowerCase().trim();
+  const filtered = ['All', ...LANGUAGES_LIST].filter(lang => 
+    lang.toLowerCase().includes(searchLower)
+  );
+  
+  if (filtered.length === 0) {
+    container.innerHTML = `<div style="padding: 8px 12px; font-size: 12px; color: var(--text3); text-align: center;">No matches</div>`;
+  } else {
+    container.innerHTML = filtered.map(lang => {
+      const activeClass = state.selectedLanguage === lang ? 'active' : '';
+      const displayLabel = lang === 'All' ? 'All Languages' : lang;
+      return `<button class="lang-option ${activeClass}" onclick="selectLanguage('${lang}')">${displayLabel}</button>`;
+    }).join('');
+  }
+}
+
+function selectLanguage(lang) {
+  state.selectedLanguage = lang;
+  localStorage.setItem('omdbSelectedLanguage', lang);
+  
+  // Close dropdown
+  const menu = document.getElementById('globalLangMenu');
+  if (menu) menu.classList.add('hidden');
+  
+  // Update button text
+  const btn = document.getElementById('globalLangBtn');
+  if (btn) btn.innerHTML = `🌐 ${lang === 'All' ? 'All Languages' : lang}`;
+  
+  // Reload dashboard
+  if (state.currentPage === 'dashboard') {
+    loadDashboard();
+  } else {
+    navigate('dashboard');
+  }
+  
+  showToast(`Language set to ${lang === 'All' ? 'All Languages' : lang}`, 'success');
+}
+
+// Close language selector when clicking outside
+window.addEventListener('click', (e) => {
+  const menu = document.getElementById('globalLangMenu');
+  if (menu && !menu.classList.contains('hidden') && !e.target.closest('.lang-dropdown-container')) {
+    menu.classList.add('hidden');
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// OMDB HELPERS
+// ═══════════════════════════════════════════════════════
+
+/** Fetch a single movie by title from OMDB */
+async function omdbByTitle(title) {
+  if (omdbCache[title]) return omdbCache[title];
+  try {
+    const url = `${OMDB_BASE}?apikey=${OMDB_KEY}&t=${encodeURIComponent(title)}&type=movie&plot=full`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (data.Response === 'True') {
+      const m = normaliseOmdb(data);
+      omdbCache[m._id] = m;
+      omdbCache[title]  = m;   // also cache by title for quick lookup
+      return m;
+    }
+  } catch (_) {}
+  return null;
+}
+
+/** Fetch a single movie by IMDB ID from OMDB */
+async function omdbById(imdbId) {
+  if (omdbCache[imdbId]) return omdbCache[imdbId];
+  try {
+    const url = `${OMDB_BASE}?apikey=${OMDB_KEY}&i=${imdbId}&type=movie&plot=full`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (data.Response === 'True') {
+      const m = normaliseOmdb(data);
+      omdbCache[imdbId] = m;
+      return m;
+    }
+  } catch (_) {}
+  return null;
+}
+
+/** Search OMDB by keyword — returns array of results (basic info, no full plot) */
+async function omdbSearch(query, page = 1) {
+  try {
+    const url = `${OMDB_BASE}?apikey=${OMDB_KEY}&s=${encodeURIComponent(query)}&type=movie&page=${page}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (data.Response === 'True') {
+      // Enrich each result with full details
+      const full = await Promise.all(
+        data.Search.slice(0, 12).map(r => omdbById(r.imdbID))
+      );
+      return full.filter(Boolean);
+    }
+  } catch (_) {}
+  return [];
+}
+
+/** Fetch multiple titles in parallel (with concurrency cap) */
+async function omdbMulti(titles, cap = 6) {
+  const results = [];
+  for (let i = 0; i < titles.length; i += cap) {
+    const batch = await Promise.all(titles.slice(i, i + cap).map(omdbByTitle));
+    results.push(...batch.filter(Boolean));
+  }
+  return results;
+}
+
+/** Convert raw OMDB response → internal movie shape */
+function normaliseOmdb(d) {
+  const rating = parseFloat(d.imdbRating) || 0;
+  const genres = d.Genre
+    ? d.Genre.split(',').map(g => g.trim()).filter(Boolean)
+    : [];
+  const cast = d.Actors
+    ? d.Actors.split(',').map(a => a.trim()).filter(a => a !== 'N/A')
+    : [];
+  const year = parseInt(d.Year) || null;
+  const runtime = parseInt((d.Runtime || '').replace(' min', '')) || 0;
+
+  return enrichMovie({
+    _id:         d.imdbID,                                    // use imdbID as our internal ID
+    imdbID:      d.imdbID,
+    title:       d.Title,
+    overview:    d.Plot !== 'N/A' ? d.Plot : 'No description available.',
+    genres,
+    language:    d.Language ? d.Language.split(',')[0].trim() : 'English',
+    releaseYear: year,
+    rating,
+    voteCount:   parseInt((d.imdbVotes || '0').replace(/,/g, '')) || 0,
+    posterPath:  d.Poster !== 'N/A' ? d.Poster : '',
+    backdropPath:'',                                           // OMDB has no backdrop
+    director:    d.Director !== 'N/A' ? d.Director : 'Unknown',
+    cast,
+    runtime,
+    rated:       d.Rated !== 'N/A' ? d.Rated : '',
+    awards:      d.Awards !== 'N/A' ? d.Awards : '',
+    boxOffice:   d.BoxOffice !== 'N/A' ? d.BoxOffice : '',
+    popularity:  rating * 10,
+    trending:    false,                                        // set explicitly by caller
+    country:     d.Country !== 'N/A' ? d.Country : ''
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  const token = localStorage.getItem('omdbToken');
+  const user  = localStorage.getItem('omdbUser');
+  if (token && user) {
+    state.token = token;
+    state.user  = JSON.parse(user);
+  }
+  renderNav();
+  setupEnterKeyListeners();
+  const hash = window.location.hash.replace('#', '') || 'landing';
+  navigate(hash);
+});
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+function navigate(page) {
+  if (page === 'profile' && !state.user) {
+    showToast('Please log in first', 'error');
+    page = 'login';
+  }
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById(`page-${page}`);
+  if (el) {
+    el.classList.add('active');
+    state.currentPage = page;
+    window.location.hash = page;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  if (page === 'landing') loadLandingPreview();
+  if (page === 'dashboard') loadDashboard();
+  if (page === 'profile' && state.user) loadProfile();
+  if (page === 'register') renderRegisterGenres();
+  renderNav();
+  document.getElementById('navLinks').classList.remove('mobile-open');
+}
+
+async function loadLandingPreview() {
+  const container = document.getElementById('landingTrendingRow');
+  if (!container) return;
+  container.innerHTML = `
+    <div class="skeleton skeleton-card"></div>
+    <div class="skeleton skeleton-card"></div>
+    <div class="skeleton skeleton-card"></div>
+    <div class="skeleton skeleton-card"></div>
+    <div class="skeleton skeleton-card"></div>
+  `;
+  try {
+    const movies = await omdbMulti(TRENDING_TITLES.slice(0, 5));
+    if (movies.length === 0) {
+      container.innerHTML = '<div class="empty-state">No movies found.</div>';
+      return;
+    }
+    container.innerHTML = movies.map(movie => {
+      const isFav = localWatchlist.some(w => w.movieId === movie._id && w.type === 'favorite');
+      const isWl  = localWatchlist.some(w => w.movieId === movie._id && w.type === 'watchlist');
+      const favClass = isFav ? 'active' : '';
+      const wlClass  = isWl  ? 'active' : '';
+      const actionsHtml = state.user 
+        ? `<div class="movie-actions">
+             <button class="action-btn ${favClass}" onclick="event.stopPropagation();toggleList('${movie._id}','favorite',this)">❤️</button>
+             <button class="action-btn ${wlClass}" onclick="event.stopPropagation();toggleList('${movie._id}','watchlist',this)">🔖</button>
+           </div>`
+        : '';
+        
+      return `
+        <div class="movie-card" onclick="openMovieModal('${movie._id}')">
+          ${actionsHtml}
+          ${movie.posterPath && movie.posterPath !== 'N/A' 
+            ? `<img class="movie-poster" src="${movie.posterPath}" alt="${movie.title}" />`
+            : `<div class="movie-poster-placeholder">🎬</div>`}
+          <div class="movie-info">
+            <div class="movie-title">${movie.title}</div>
+            <div class="movie-meta">
+              <span class="movie-rating">★ ${movie.rating ? movie.rating.toFixed(1) : 'N/A'}</span>
+              <span class="movie-year">${movie.releaseYear || ''}</span>
+            </div>
+            <div class="movie-genres">
+              ${(movie.genres || []).slice(0, 2).map(g => `<span class="genre-badge">${g}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    container.innerHTML = '<div class="empty-state">Failed to load preview.</div>';
+  }
+}
+
+function getUserAvatar() {
+  if (!state.user) return '👤';
+  const localVal = localStorage.getItem(`omdb_avatar_${state.user._id}`);
+  if (localVal) return localVal;
+  
+  const emojis = ['🦊', '🐯', '🤖', '🛸', '🎮', '🚀', '🎭', '🧠', '🕶️', '🍿', '👾', '⚡'];
+  const name = state.user.name || 'User';
+  let sum = 0;
+  for (let i = 0; i < name.length; i++) sum += name.charCodeAt(i);
+  return emojis[sum % emojis.length];
+}
+
+function changeUserAvatar(emoji) {
+  if (!state.user) return;
+  localStorage.setItem(`omdb_avatar_${state.user._id}`, emoji);
+  showToast('Profile avatar updated!', 'success');
+  renderNav();
+  const profileAvatar = document.getElementById('profileAvatar');
+  if (profileAvatar) {
+    profileAvatar.textContent = emoji;
+  }
+}
+
+function renderNav() {
+  const links     = document.getElementById('navLinks');
+  const isLoggedIn = !!state.user;
+  const displayLang = state.selectedLanguage === 'All' ? 'All Languages' : state.selectedLanguage;
+  
+  const userDisplayName = state.user && state.user.name ? state.user.name : 'User';
+  
+  links.innerHTML = `
+    <div class="nav-search">
+      <span>🔍</span>
+      <input type="text" placeholder="Quick search…"
+        onkeyup="if(event.key==='Enter'){navigate('dashboard');setTimeout(()=>quickSearch(this.value),120)}" />
+    </div>
+    <div class="lang-dropdown-container">
+      <button class="nav-btn nav-btn-ghost lang-select-btn" onclick="toggleLangDropdown(event)" id="globalLangBtn">
+        🌐 ${displayLang}
+      </button>
+      <div class="lang-dropdown-menu hidden" id="globalLangMenu" onclick="event.stopPropagation()">
+        <div class="lang-search-wrapper">
+          <input type="text" placeholder="Search language..." id="langSearchInput" oninput="filterLanguages(this.value)" />
+        </div>
+        <div class="lang-options-list" id="langOptionsList"></div>
+      </div>
+    </div>
+    ${isLoggedIn ? `
+      <button class="nav-btn nav-btn-ghost" onclick="navigate('dashboard')">Dashboard</button>
+      <button class="nav-btn nav-btn-ghost" onclick="navigate('profile')">Profile</button>
+      <button class="avatar-btn" onclick="navigate('profile')" title="${userDisplayName}">
+        ${getUserAvatar()}
+      </button>
+      <button class="nav-btn nav-btn-ghost" onclick="logout()">Logout</button>
+    ` : `
+      <button class="nav-btn nav-btn-ghost" onclick="navigate('dashboard')">Browse</button>
+      <button class="nav-btn nav-btn-ghost" onclick="navigate('login')">Login</button>
+      <button class="nav-btn nav-btn-primary" onclick="navigate('register')">Sign Up</button>
+    `}`;
+}
+
+function toggleMobileMenu() {
+  document.getElementById('navLinks').classList.toggle('mobile-open');
+}
+
+// ═══════════════════════════════════════════════════════
+// OPTIONAL BACKEND HELPER (used only for auth + watchlist when server is running)
+// ═══════════════════════════════════════════════════════
+async function apiCall(endpoint, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (state.token && state.token !== 'demo-token')
+    opts.headers['Authorization'] = `Bearer ${state.token}`;
+  if (body) opts.body = JSON.stringify(body);
+  try {
+    const res  = await fetch(`${BACKEND}${endpoint}`, opts);
+    const data = await res.json();
+    return { ok: res.ok, data };
+  } catch (_) {
+    return { ok: false, data: { message: 'backend-unavailable' } };
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════
+async function handleLogin() {
+  const email    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const btn      = document.getElementById('loginBtn');
+  const err      = document.getElementById('loginError');
+  if (!email || !password) { showErr(err, 'Please fill all fields'); return; }
+
+  btn.disabled = true; btn.textContent = 'Signing in…';
+
+  const { ok, data } = await apiCall('/auth/login', 'POST', { email, password });
+  if (ok) {
+    setSession(data.token, data.user);
+    showToast('Welcome back, ' + data.user.name + '!', 'success');
+    navigate('dashboard');
+  } else {
+    // Always allow demo login so the app works without a running server
+    const demoUser = {
+      _id: 'demo', name: 'Demo User', email,
+      preferences: { genres: [], languages: ['English'] },
+      createdAt: new Date().toISOString()
+    };
+    setSession('demo-token', demoUser);
+    showToast('Logged in (demo mode) 🎬', 'info');
+    navigate('dashboard');
+  }
+  btn.disabled = false; btn.textContent = 'Sign In';
+}
+
+async function handleRegister() {
+  const name     = document.getElementById('regName').value.trim();
+  const email    = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  const btn      = document.getElementById('registerBtn');
+  const err      = document.getElementById('registerError');
+  if (!name || !email || !password) { showErr(err, 'Please fill all fields'); return; }
+  if (password.length < 6) { showErr(err, 'Password must be at least 6 characters'); return; }
+
+  btn.disabled = true; btn.textContent = 'Creating account…';
+
+  const { ok, data } = await apiCall('/auth/register', 'POST', {
+    name, email, password,
+    preferences: { genres: state.selectedGenres, languages: ['English'] }
+  });
+
+  if (ok) {
+    setSession(data.token, data.user);
+    showToast('Welcome to OMDB, ' + data.user.name + '!', 'success');
+  } else {
+    const demoUser = {
+      _id: 'demo', name, email,
+      preferences: { genres: state.selectedGenres, languages: ['English'] },
+      createdAt: new Date().toISOString()
+    };
+    setSession('demo-token', demoUser);
+    showToast('Account created (demo mode) 🎬', 'info');
+  }
+  navigate('dashboard');
+  btn.disabled = false; btn.textContent = 'Create Account';
+}
+
+function setSession(token, user) {
+  state.token = token; state.user = user;
+  localStorage.setItem('omdbToken', token);
+  localStorage.setItem('omdbUser', JSON.stringify(user));
+}
+
+function logout() {
+  state.token = null; state.user = null;
+  localStorage.removeItem('omdbToken');
+  localStorage.removeItem('omdbUser');
+  renderNav();
+  showToast('Logged out', 'info');
+  navigate('landing');
+}
+
+// ═══════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════
+function renderDashboardHero(movie) {
+  const container = document.getElementById('dashboardHeroContainer');
+  if (!container) return;
+  if (!movie) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  const wlState = localWatchlist.find(w => w.movieId === movie._id && w.type === 'watchlist');
+  const favBtnHtml = state.user 
+    ? `<button class="btn btn-secondary" onclick="event.stopPropagation();toggleList('${movie._id}','watchlist')">
+         ${wlState ? '🔖 Added' : '🔖 Add to Watchlist'}
+       </button>`
+    : `<button class="btn btn-secondary" onclick="navigate('login')">🔒 Log in to save</button>`;
+
+  container.innerHTML = `
+    <div class="dash-hero" style="background-image: linear-gradient(to right, rgba(5, 6, 8, 0.96) 30%, rgba(5, 6, 8, 0.4) 70%, rgba(5, 6, 8, 0.96)), url('${movie.posterPath}');">
+      <div class="dash-hero-content animate-fade">
+        <div class="dash-hero-badge">⭐ FEATURED MOVIE</div>
+        <h1 class="dash-hero-title">${movie.title}</h1>
+        <div class="dash-hero-meta">
+          <span>⭐ ${movie.rating ? movie.rating.toFixed(1) : 'N/A'}/10</span>
+          <span>📅 ${movie.releaseYear || ''}</span>
+          <span>🌐 ${movie.language || 'English'}</span>
+        </div>
+        <p class="dash-hero-overview">${movie.overview}</p>
+        <div class="dash-hero-btns">
+          <button class="btn btn-primary" onclick="openMovieModal('${movie._id}')">🎬 View Details</button>
+          ${favBtnHtml}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function loadDashboard() {
+  const hour  = new Date().getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('dashWelcome').textContent =
+    state.user ? `${greet}, ${state.user.name}!` : `${greet}!`;
+  document.getElementById('dashTitle').textContent =
+    state.user ? 'Your Movie Dashboard' : 'Discover Movies';
+
+  // Reset pagination
+  state.omdbPage = 1;
+  state.currentGenre = '';
+
+  // Build genre filter chips
+  buildGenreFilter();
+  initMatchmakerUI();
+
+  // Load all sections
+  await Promise.all([loadTrending(), loadAllMovies()]);
+
+  // Render hero from trending or default pool
+  if (state.trendingMovies && state.trendingMovies.length > 0) {
+    renderDashboardHero(state.trendingMovies[0]);
+  } else if (state.movies && state.movies.length > 0) {
+    renderDashboardHero(state.movies[0]);
+  } else {
+    renderDashboardHero(null);
+  }
+
+  if (state.user) {
+    document.getElementById('recommendationsSection').style.display = 'block';
+    loadRecommendations();
+  }
+}
+
+// ── Trending ──────────────────────────────────────────
+async function loadTrending() {
+  showSkeletons('trendingMovies', 6);
+  
+  let titles = TRENDING_TITLES;
+  if (state.selectedLanguage && state.selectedLanguage !== 'All') {
+    titles = (LANGUAGE_PRESETS[state.selectedLanguage] || []).slice(0, 5);
+  }
+  
+  const movies = await omdbMulti(titles);
+  movies.forEach(m => m.trending = true);
+  state.trendingMovies = movies;
+  
+  renderMoviesRow('trendingMovies', movies);
+}
+
+// ── All Movies (paginated in chunks of 10) ────────────
+const PAGE_SIZE = 10;
+async function loadAllMovies(genre = '') {
+  showSkeletons('allMovies', 10);
+
+  let titles;
+  if (genre && GENRE_TITLES[genre]) {
+    titles = GENRE_TITLES[genre];
+    document.getElementById('loadMoreContainer').style.display = 'none';
+  } else {
+    // If a specific language is selected, load the preset titles for that language
+    if (state.selectedLanguage && state.selectedLanguage !== 'All') {
+      const langTitles = LANGUAGE_PRESETS[state.selectedLanguage] || [];
+      const movies = await omdbMulti(langTitles);
+      const filtered = movies.filter(m => m.language && m.language.toLowerCase().includes(state.selectedLanguage.toLowerCase()));
+      state.movies = filtered;
+      document.getElementById('loadMoreContainer').style.display = 'none';
+      renderMoviesGrid('allMovies', filtered);
+      return;
+    }
+
+    const start = (state.omdbPage - 1) * PAGE_SIZE;
+    titles = ALL_TITLES.slice(start, start + PAGE_SIZE);
+    document.getElementById('loadMoreContainer').style.display =
+      start + PAGE_SIZE < ALL_TITLES.length ? 'block' : 'none';
+  }
+
+  const newMovies = await omdbMulti(titles);
+
+  if (state.omdbPage === 1 || genre) {
+    state.movies = newMovies;
+  } else {
+    state.movies = [...state.movies, ...newMovies];
+  }
+  renderMoviesGrid('allMovies', state.movies);
+}
+
+async function loadMoreMovies() {
+  state.omdbPage++;
+  const start = (state.omdbPage - 1) * PAGE_SIZE;
+  const titles = ALL_TITLES.slice(start, start + PAGE_SIZE);
+  document.getElementById('loadMoreContainer').style.display =
+    start + PAGE_SIZE < ALL_TITLES.length ? 'block' : 'none';
+  const more = await omdbMulti(titles);
+  state.movies = [...state.movies, ...more];
+  renderMoviesGrid('allMovies', state.movies);
+}
+
+// ── Recommendations ───────────────────────────────────
+async function loadRecommendations() {
+  const prefs = state.user?.preferences?.genres || [];
+  showSkeletons('recommendedMovies', 6, true);
+
+  let picks = [];
+  if (prefs.length > 0) {
+    // Fetch a few titles per preferred genre
+    const pool = prefs.flatMap(g => (GENRE_TITLES[g] || []).slice(0, 3));
+    // Remove duplicates and shuffle
+    const unique = [...new Set(pool)].sort(() => Math.random() - 0.5).slice(0, 10);
+    picks = await omdbMulti(unique);
+  }
+
+  if (picks.length < 4) {
+    // Top-rated fallback
+    const fallback = await omdbMulti(
+      ['The Godfather','Schindler\'s List','The Dark Knight','Pulp Fiction','12 Angry Men']
+    );
+    picks = [...picks, ...fallback].slice(0, 10);
+  }
+
+  // Prioritize / Filter by selected language
+  if (state.selectedLanguage && state.selectedLanguage !== 'All') {
+    const langLower = state.selectedLanguage.toLowerCase();
+    let langFiltered = picks.filter(m => m.language && m.language.toLowerCase().includes(langLower));
+    
+    // If not enough matches, search the broader curated list for this language
+    if (langFiltered.length < 6) {
+      const allCuratedTitles = [...new Set([
+        ...ALL_TITLES,
+        ...TRENDING_TITLES,
+        ...Object.values(GENRE_TITLES).flat()
+      ])];
+      const allMoviesPool = await omdbMulti(allCuratedTitles);
+      const extraMatches = allMoviesPool.filter(m => 
+        m.language && 
+        m.language.toLowerCase().includes(langLower) && 
+        !langFiltered.some(p => p._id === m._id)
+      );
+      picks = [...langFiltered, ...extraMatches].slice(0, 10);
+    } else {
+      picks = langFiltered;
+    }
+  }
+
+  renderMoviesRow('recommendedMovies', picks);
+}
+
+// ── Genre Filter ──────────────────────────────────────
+function buildGenreFilter() {
+  const filter = document.getElementById('genreFilter');
+  filter.innerHTML = `<button class="filter-chip active" onclick="filterByGenre('',this)">All</button>`;
+  GENRES.forEach(g => {
+    const btn = document.createElement('button');
+    btn.className  = 'filter-chip';
+    btn.textContent = g;
+    btn.onclick = () => filterByGenre(g, btn);
+    filter.appendChild(btn);
+  });
+}
+
+async function filterByGenre(genre, btn) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  state.currentGenre = genre;
+  state.omdbPage = 1;
+  document.getElementById('allMoviesTitle').textContent = genre || 'All Movies';
+  await loadAllMovies(genre);
+}
+
+// ═══════════════════════════════════════════════════════
+// SEARCH  (uses OMDB &s= endpoint)
+// ═══════════════════════════════════════════════════════
+function debounceSearch(val) {
+  clearTimeout(state.searchTimeout);
+  document.getElementById('clearSearch').style.display = val ? 'flex' : 'none';
+  if (!val.trim()) { clearSearch(); return; }
+  state.searchTimeout = setTimeout(() => performSearch(val), 500);
+}
+
+async function performSearch(q) {
+  document.getElementById('searchResults').classList.remove('hidden');
+  document.getElementById('normalContent').style.display = 'none';
+  document.getElementById('searchResultsTitle').textContent = `Results for "${q}"`;
+
+  // Show loading skeletons while waiting
+  showSkeletons('searchResultsGrid', 8);
+
+  let movies = await omdbSearch(q);
+
+  // Apply language filter in display if selectedLanguage is not 'All'
+  if (state.selectedLanguage && state.selectedLanguage !== 'All') {
+    movies = movies.filter(m => m.language && m.language.toLowerCase().includes(state.selectedLanguage.toLowerCase()));
+  }
+
+  if (!movies.length) {
+    document.getElementById('searchResultsGrid').innerHTML =
+      `<div class="empty-state" style="grid-column:1/-1">
+         <div class="emoji">🔍</div><p>No movies found for "<strong>${q}</strong>" ${state.selectedLanguage !== 'All' ? `in <strong>${state.selectedLanguage}</strong>` : ''}</p>
+       </div>`;
+  } else {
+    renderMoviesGrid('searchResultsGrid', movies);
+  }
+}
+
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('clearSearch').style.display = 'none';
+  document.getElementById('searchResults').classList.add('hidden');
+  document.getElementById('normalContent').style.display = 'block';
+}
+
+function quickSearch(val) {
+  if (val.trim()) {
+    document.getElementById('searchInput').value = val;
+    document.getElementById('clearSearch').style.display = 'flex';
+    performSearch(val);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER HELPERS
+// ═══════════════════════════════════════════════════════
+function showSkeletons(containerId, count, isRow = false) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const style = isRow ? 'min-width:160px;flex-shrink:0;' : '';
+  el.innerHTML = Array(count).fill(0)
+    .map(() => `<div class="skeleton skeleton-card" style="${style}"></div>`).join('');
+}
+
+function renderMoviesGrid(containerId, movies) {
+  const el = document.getElementById(containerId);
+  if (!movies.length) {
+    el.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="emoji">🎬</div><p>No movies found</p></div>`;
+    return;
+  }
+  el.innerHTML = movies.map(m => movieCardHTML(m)).join('');
+}
+
+function renderMoviesRow(containerId, movies) {
+  const el = document.getElementById(containerId);
+  if (!movies.length) {
+    el.innerHTML = `<div class="empty-state"><p>No movies</p></div>`;
+    return;
+  }
+  el.innerHTML = movies.map(m => movieCardHTML(m, true)).join('');
+}
+
+function movieCardHTML(movie, compact = false) {
+  const safeId = CSS.escape ? CSS.escape(movie._id) : movie._id;
+  const poster  = movie.posterPath
+    ? `<img class="movie-poster" src="${movie.posterPath}" alt="${movie.title}"
+         loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    : '';
+  const placeholder = `<div class="movie-poster-placeholder" ${movie.posterPath ? 'style="display:none"' : ''}>🎬</div>`;
+  const genres  = (movie.genres || []).slice(0, 2).map(g => `<span class="genre-badge">${g}</span>`).join('');
+  const wlState = localWatchlist.find(w => w.movieId === movie._id && w.type === 'watchlist');
+  const fvState = localWatchlist.find(w => w.movieId === movie._id && w.type === 'favorite');
+
+  const accuracyBadge = (matchState.active && movie.matchAccuracy !== undefined)
+    ? `<div class="accuracy-badge ${movie.matchAccuracy >= 85 ? 'accuracy-high' : movie.matchAccuracy >= 65 ? 'accuracy-med' : 'accuracy-low'}">🎯 ${movie.matchAccuracy}% Match</div>`
+    : '';
+
+  return `
+    <div class="movie-card" onclick="openMovieModal('${movie._id}')">
+      ${movie.trending ? '<div class="trending-badge">🔥 Hot</div>' : ''}
+      ${accuracyBadge}
+      <div class="movie-actions">
+        ${state.user ? `
+          <button class="action-btn ${fvState ? 'active' : ''}"
+            onclick="event.stopPropagation();toggleList('${movie._id}','favorite')"
+            title="Favorite" id="fav-${movie._id}">♥</button>
+          <button class="action-btn ${wlState ? 'active' : ''}"
+            onclick="event.stopPropagation();toggleList('${movie._id}','watchlist')"
+            title="Watchlist" id="wl-${movie._id}">🔖</button>
+        ` : `<button class="action-btn" onclick="event.stopPropagation();navigate('login')" title="Login to save">🔒</button>`}
+      </div>
+      ${poster}${placeholder}
+      <div class="movie-info">
+        <div class="movie-title">${movie.title}</div>
+        <div class="movie-meta" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="movie-rating">⭐ ${movie.rating ? movie.rating.toFixed(1) : 'N/A'}</span>
+            <span class="movie-year" style="color: var(--text3); font-weight: 500;">${movie.releaseYear || ''}</span>
+          </div>
+          <span style="font-size: 11px; color: var(--text3); font-weight: 500; display: inline-flex; align-items: center; gap: 4px;">🌐 ${movie.language ? movie.language.split(',')[0].trim() : 'N/A'}</span>
+        </div>
+        ${!compact ? `<div class="movie-genres" style="margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap;">${genres}</div>` : ''}
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// MOVIE MODAL  — fetches rich detail from OMDB by imdbID
+// ═══════════════════════════════════════════════════════
+let currentModalMovie = null;
+
+async function openMovieModal(imdbId) {
+  const modal = document.getElementById('movieModal');
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+
+  // Show loading state in modal
+  document.getElementById('modalTitle').textContent    = 'Loading…';
+  document.getElementById('modalMeta').innerHTML       = '';
+  document.getElementById('modalOverview').textContent = '';
+  document.getElementById('modalCustomMetadata').innerHTML = '';
+  document.getElementById('modalCast').innerHTML       = '';
+  document.getElementById('modalActions').innerHTML    = '';
+  document.getElementById('modalHeaderBackdrop').innerHTML   =
+    `<div style="height:100%;background:var(--bg3);display:flex;align-items:center;justify-content:center;">
+       <div class="spinner"></div>
+     </div>
+     <div class="modal-backdrop-overlay-blur"></div>
+     <button class="modal-close" onclick="closeMovieModal()">✕</button>`;
+  document.getElementById('modalPosterSide').innerHTML =
+    `<div class="skeleton-card skeleton" style="height:100%;"></div>`;
+
+  // Fetch from cache or OMDB
+  let movie = omdbCache[imdbId]
+    || [...state.movies, ...state.trendingMovies].find(m => m._id === imdbId)
+    || await omdbById(imdbId);
+
+  if (!movie) { closeMovieModal(); showToast('Could not load movie', 'error'); return; }
+  currentModalMovie = movie;
+
+  // Poster as backdrop blur
+  const backdropSrc = movie.posterPath;
+  const headerBackdrop = document.getElementById('modalHeaderBackdrop');
+  if (backdropSrc) {
+    headerBackdrop.innerHTML =
+      `<img class="modal-backdrop-blur-img" src="${backdropSrc}" alt="${movie.title}">
+       <div class="modal-backdrop-overlay-blur"></div>
+       <button class="modal-close" onclick="closeMovieModal()">✕</button>`;
+  } else {
+    headerBackdrop.innerHTML =
+      `<div style="height:100%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:64px;">🎬</div>
+       <div class="modal-backdrop-overlay-blur"></div>
+       <button class="modal-close" onclick="closeMovieModal()">✕</button>`;
+  }
+
+  // Render Left Side Poster
+  const posterSide = document.getElementById('modalPosterSide');
+  if (movie.posterPath) {
+    posterSide.innerHTML = `<img src="${movie.posterPath}" alt="${movie.title}" onerror="this.parentNode.innerHTML='<div class=&quot;modal-poster-placeholder-side&quot;>🎬</div>'">`;
+  } else {
+    posterSide.innerHTML = `<div class="modal-poster-placeholder-side">🎬</div>`;
+  }
+
+  const wlState = localWatchlist.find(w => w.movieId === movie._id && w.type === 'watchlist');
+  const fvState = localWatchlist.find(w => w.movieId === movie._id && w.type === 'favorite');
+  const lkState = localWatchlist.find(w => w.movieId === movie._id && w.type === 'liked');
+
+  document.getElementById('modalTitle').textContent = movie.title;
+  document.getElementById('modalMeta').innerHTML = `
+    <span class="modal-rating">⭐ ${movie.rating ? movie.rating.toFixed(1) : 'N/A'}/10</span>
+    ${movie.releaseYear ? `<span>📅 ${movie.releaseYear}</span>` : ''}
+    ${movie.runtime     ? `<span>⏱ ${movie.runtime} min</span>` : ''}
+    ${movie.rated       ? `<span class="genre-badge">${movie.rated}</span>` : ''}
+    ${movie.language    ? `<span>🌐 ${movie.language}</span>` : ''}
+    <span style="color:var(--accent)">${(movie.genres || []).join(' · ')}</span>
+    ${movie.boxOffice   ? `<span style="color:var(--gold)">💰 ${movie.boxOffice}</span>` : ''}
+    ${movie.awards      ? `<span style="color:var(--text2);font-size:12px">🏆 ${movie.awards}</span>` : ''}
+  `;
+  document.getElementById('modalOverview').textContent = movie.overview;
+
+  const moodsHtml = (movie.moods || []).map(m => `<span class="metadata-custom-badge mood-badge">🎭 ${m}</span>`).join('');
+  const sitsHtml = (movie.situations || []).map(s => `<span class="metadata-custom-badge situation-badge">👥 ${s}</span>`).join('');
+  const dnaHtml = (movie.dna || []).map(d => `<span class="metadata-custom-badge dna-badge">🧬 ${d}</span>`).join('');
+  
+  document.getElementById('modalCustomMetadata').innerHTML = `
+    ${moodsHtml || sitsHtml || dnaHtml ? `
+      <div style="display:flex;flex-direction:column;gap:12px;padding:14px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid var(--border)">
+        ${moodsHtml ? `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-size:11px;font-weight:600;text-transform:uppercase;color:var(--text3);width:80px">Moods:</span><div style="display:flex;flex-wrap:wrap;gap:6px">${moodsHtml}</div></div>` : ''}
+        ${sitsHtml ? `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-size:11px;font-weight:600;text-transform:uppercase;color:var(--text3);width:80px">Best With:</span><div style="display:flex;flex-wrap:wrap;gap:6px">${sitsHtml}</div></div>` : ''}
+        ${dnaHtml ? `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-size:11px;font-weight:600;text-transform:uppercase;color:var(--text3);width:80px">Movie DNA:</span><div style="display:flex;flex-wrap:wrap;gap:6px">${dnaHtml}</div></div>` : ''}
+      </div>
+    ` : ''}
+  `;
+
+  const castHtml = (movie.cast || []).map(c => `<span class="cast-tag">${c}</span>`).join('');
+  const dirHtml  = movie.director && movie.director !== 'Unknown'
+    ? `<span class="cast-tag" style="border-color:var(--accent);color:var(--accent2)">🎬 ${movie.director}</span>`
+    : '';
+  document.getElementById('modalCast').innerHTML = dirHtml + castHtml;
+
+  const actions = document.getElementById('modalActions');
+  if (state.user) {
+    actions.innerHTML = `
+      <button class="btn btn-primary btn-sm ${fvState ? 'active' : ''}"
+        onclick="toggleList('${movie._id}','favorite')"
+        id="modal-fav-${movie._id}">
+        ${fvState ? '❤️ Favorited' : '♥ Favorite'}
+      </button>
+      <button class="btn btn-secondary btn-sm ${wlState ? 'active' : ''}"
+        onclick="toggleList('${movie._id}','watchlist')"
+        id="modal-wl-${movie._id}">
+        ${wlState ? '✅ In Watchlist' : '🔖 Watchlist'}
+      </button>
+      <button class="btn btn-secondary btn-sm ${lkState ? 'active' : ''}"
+        onclick="toggleList('${movie._id}','liked')"
+        id="modal-lk-${movie._id}">
+        ${lkState ? '👍 Liked' : '👍 Like'}
+      </button>
+    `;
+  } else {
+    actions.innerHTML =
+      `<button class="btn btn-primary btn-sm" onclick="navigate('login')">Login to save</button>`;
+  }
+}
+
+function closeMovieModal() {
+  document.getElementById('movieModal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+function closeModal(e) {
+  if (e.target === document.getElementById('movieModal')) closeMovieModal();
+}
+
+// ═══════════════════════════════════════════════════════
+// WATCHLIST  (localStorage-backed; syncs to backend when available)
+// ═══════════════════════════════════════════════════════
+async function toggleList(movieId, type) {
+  if (!state.user) { navigate('login'); return; }
+
+  const movie  = currentModalMovie || omdbCache[movieId];
+  const idx    = localWatchlist.findIndex(w => w.movieId === movieId && w.type === type);
+
+  if (idx >= 0) {
+    // Remove
+    localWatchlist.splice(idx, 1);
+    showToast(`Removed from ${type}`, 'info');
+    // Try backend
+    apiCall(`/watchlist/${movieId}?type=${type}`, 'DELETE').catch(() => {});
+  } else {
+    // Add
+    localWatchlist.push({ movieId, type, movie,
+      addedAt: new Date().toISOString() });
+    showToast(`Added to ${type}!`, 'success');
+    // Try backend
+    if (movie) {
+      apiCall('/watchlist', 'POST', { movieId, type }).catch(() => {});
+    }
+  }
+
+  // Persist locally
+  localStorage.setItem('omdb_watchlist', JSON.stringify(localWatchlist));
+
+  // Refresh all button states
+  refreshWatchlistButtons(movieId);
+
+  // Re-render modal actions if modal is open
+  if (currentModalMovie && currentModalMovie._id === movieId) {
+    openMovieModal(movieId);
+  }
+}
+
+function refreshWatchlistButtons(movieId) {
+  const fv = !!localWatchlist.find(w => w.movieId === movieId && w.type === 'favorite');
+  const wl = !!localWatchlist.find(w => w.movieId === movieId && w.type === 'watchlist');
+
+  [document.getElementById(`fav-${movieId}`),
+   document.getElementById(`modal-fav-${movieId}`)].forEach(btn => {
+    if (btn) btn.classList.toggle('active', fv);
+  });
+  [document.getElementById(`wl-${movieId}`),
+   document.getElementById(`modal-wl-${movieId}`)].forEach(btn => {
+    if (btn) btn.classList.toggle('active', wl);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// PROFILE
+// ═══════════════════════════════════════════════════════
+async function loadProfile() {
+  if (!state.user) return;
+
+  document.getElementById('profileAvatar').textContent = getUserAvatar();
+  document.getElementById('profileName').textContent   = state.user.name;
+  document.getElementById('profileEmail').textContent  = state.user.email;
+  document.getElementById('profileJoined').textContent =
+    'Member since ' + new Date(state.user.createdAt)
+      .toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+
+  state.profileGenres = [...(state.user.preferences?.genres || [])];
+  renderProfileGenres();
+
+  // Stats from local watchlist
+  const favs = localWatchlist.filter(w => w.type === 'favorite');
+  const wls  = localWatchlist.filter(w => w.type === 'watchlist');
+  document.getElementById('statFavorites').textContent = favs.length;
+  document.getElementById('statWatchlist').textContent = wls.length;
+
+  // Render saved movies
+  if (favs.length) {
+    const movies = favs.map(w => w.movie).filter(Boolean);
+    movies.length
+      ? renderMoviesGrid('profileFavorites', movies)
+      : (document.getElementById('profileFavorites').innerHTML =
+          `<div class="empty-state"><div class="emoji">🎬</div><p>No favorites yet</p></div>`);
+  }
+  if (wls.length) {
+    const movies = wls.map(w => w.movie).filter(Boolean);
+    movies.length
+      ? renderMoviesGrid('profileWatchlist', movies)
+      : (document.getElementById('profileWatchlist').innerHTML =
+          `<div class="empty-state"><div class="emoji">📋</div><p>Watchlist is empty</p></div>`);
+  }
+}
+
+function renderProfileGenres() {
+  document.getElementById('genrePrefs').innerHTML = GENRES.map(g => `
+    <div class="pref-chip ${state.profileGenres.includes(g) ? 'active' : ''}"
+         onclick="toggleProfileGenre('${g}',this)">${g}</div>`).join('');
+}
+
+function toggleProfileGenre(genre, el) {
+  if (state.profileGenres.includes(genre)) {
+    state.profileGenres = state.profileGenres.filter(g => g !== genre);
+    el.classList.remove('active');
+  } else {
+    state.profileGenres.push(genre);
+    el.classList.add('active');
+  }
+}
+
+async function savePreferences() {
+  const { ok, data } = await apiCall('/auth/preferences', 'PUT',
+    { genres: state.profileGenres, languages: ['English'] });
+
+  if (ok) {
+    state.user = data.user;
+    localStorage.setItem('omdbUser', JSON.stringify(data.user));
+  } else {
+    // Save locally
+    state.user.preferences.genres = state.profileGenres;
+    localStorage.setItem('omdbUser', JSON.stringify(state.user));
+  }
+  showToast('Preferences saved! Recommendations will update.', 'success');
+}
+
+// ═══════════════════════════════════════════════════════
+// REGISTER — genre chips
+// ═══════════════════════════════════════════════════════
+function renderRegisterGenres() {
+  document.getElementById('regGenres').innerHTML = GENRES.map(g => `
+    <div class="genre-chip ${state.selectedGenres.includes(g) ? 'selected' : ''}"
+         onclick="toggleRegGenre('${g}',this)">${g}</div>`).join('');
+}
+
+function toggleRegGenre(genre, el) {
+  if (state.selectedGenres.includes(genre)) {
+    state.selectedGenres = state.selectedGenres.filter(g => g !== genre);
+    el.classList.remove('selected');
+  } else {
+    state.selectedGenres.push(genre);
+    el.classList.add('selected');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════
+function showToast(msg, type = 'info', duration = 3000) {
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+  document.getElementById('toastContainer').appendChild(toast);
+  setTimeout(() => {
+    toast.style.cssText += 'opacity:0;transform:translateX(100%);transition:all 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+function showErr(el, msg) {
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 5000);
+}
+
+function setupEnterKeyListeners() {
+  document.getElementById('loginPassword')
+    .addEventListener('keyup', e => { if (e.key === 'Enter') handleLogin(); });
+  document.getElementById('loginEmail')
+    .addEventListener('keyup', e => { if (e.key === 'Enter') handleLogin(); });
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeMovieModal();
+});
+</script>
+</body>
+</html>

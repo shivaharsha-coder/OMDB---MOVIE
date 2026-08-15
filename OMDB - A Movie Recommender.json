@@ -1,0 +1,240 @@
+{
+  "info": {
+    "name": "OMDB - A Movie Recommender API",
+    "description": "Complete API collection for Movie Recommendation System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5000/api" },
+    { "key": "token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "🔐 Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\",\n  \"preferences\": {\n    \"genres\": [\"Action\", \"Drama\"],\n    \"languages\": [\"English\"]\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.token) pm.collectionVariables.set('token', res.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Me (Protected)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/auth/me"
+          }
+        },
+        {
+          "name": "Update Preferences",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/auth/preferences",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"genres\": [\"Action\", \"Thriller\", \"Science Fiction\"],\n  \"languages\": [\"English\", \"Korean\"]\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🎬 Movies",
+      "item": [
+        {
+          "name": "Get All Movies",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/movies?page=1&limit=12",
+              "host": ["{{base_url}}"],
+              "path": ["movies"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "12" },
+                { "key": "genre", "value": "Action", "disabled": true },
+                { "key": "sort", "value": "-rating", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Trending Movies",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/movies/trending"
+          }
+        },
+        {
+          "name": "Search Movies",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/movies/search?q=inception",
+              "host": ["{{base_url}}"],
+              "path": ["movies", "search"],
+              "query": [{ "key": "q", "value": "inception" }]
+            }
+          }
+        },
+        {
+          "name": "Get Recommendations (Protected)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/movies/recommendations"
+          }
+        },
+        {
+          "name": "Get Movie by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/movies/MOVIE_ID_HERE"
+          }
+        },
+        {
+          "name": "Get All Genres",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/movies/genres"
+          }
+        },
+        {
+          "name": "Filter by Genre",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/movies?genre=Action",
+              "host": ["{{base_url}}"],
+              "path": ["movies"],
+              "query": [{ "key": "genre", "value": "Action" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 Watchlist",
+      "item": [
+        {
+          "name": "Get Watchlist",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/watchlist"
+          }
+        },
+        {
+          "name": "Get Favorites Only",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/watchlist?type=favorite",
+              "host": ["{{base_url}}"],
+              "path": ["watchlist"],
+              "query": [{ "key": "type", "value": "favorite" }]
+            }
+          }
+        },
+        {
+          "name": "Add to Watchlist",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/watchlist",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"movieId\": \"MOVIE_ID_HERE\",\n  \"type\": \"watchlist\",\n  \"notes\": \"Want to watch this weekend\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Add to Favorites",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/watchlist",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"movieId\": \"MOVIE_ID_HERE\",\n  \"type\": \"favorite\",\n  \"rating\": 5\n}"
+            }
+          }
+        },
+        {
+          "name": "Check Movie Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{base_url}}/watchlist/check/MOVIE_ID_HERE"
+          }
+        },
+        {
+          "name": "Remove from Watchlist",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/watchlist/MOVIE_ID_HERE?type=watchlist",
+              "host": ["{{base_url}}"],
+              "path": ["watchlist", "MOVIE_ID_HERE"],
+              "query": [{ "key": "type", "value": "watchlist" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "⚙️ System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/health"
+          }
+        }
+      ]
+    }
+  ]
+}
