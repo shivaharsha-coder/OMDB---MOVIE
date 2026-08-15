@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="index.css?v=10" />
+  <link rel="stylesheet" href="index.css?v=11" />
 </head>
 <body>
 
@@ -1032,11 +1032,19 @@ function selectLanguage(lang) {
   const btn = document.getElementById('globalLangBtn');
   if (btn) btn.innerHTML = `🌐 ${lang === 'All' ? 'All Languages' : lang}`;
   
-  // Reload dashboard
-  if (state.currentPage === 'dashboard') {
-    loadDashboard();
+  // Check if search is currently active on the dashboard
+  const searchInput = document.getElementById('searchInput');
+  const searchVal = searchInput ? searchInput.value.trim() : '';
+  
+  if (searchVal && state.currentPage === 'dashboard') {
+    performSearch(searchVal);
   } else {
-    navigate('dashboard');
+    // Reload dashboard
+    if (state.currentPage === 'dashboard') {
+      loadDashboard();
+    } else {
+      navigate('dashboard');
+    }
   }
   
   showToast(`Language set to ${lang === 'All' ? 'All Languages' : lang}`, 'success');
