@@ -1062,51 +1062,50 @@ window.addEventListener('click', (e) => {
 // OMDB HELPERS
 // ═══════════════════════════════════════════════════════
 
-/** Fetch a single movie by title from OMDB */
+/** Fetch a single movie by title from Backend */
 async function omdbByTitle(title) {
   if (omdbCache[title]) return omdbCache[title];
   try {
-    const url = `${OMDB_BASE}?apikey=${getOmdbKey()}&t=${encodeURIComponent(title)}&type=movie&plot=full`;
-    const res  = await fetch(url);
-    const data = await res.json();
-    if (data.Response === 'True') {
-      const m = normaliseOmdb(data);
+    const { ok, data } = await apiCall(`/movies/by-title?title=${encodeURIComponent(title)}`);
+    if (ok && data.success && data.movie) {
+      const m = data.movie;
       omdbCache[m._id] = m;
-      omdbCache[title]  = m;   // also cache by title for quick lookup
+      omdbCache[m.imdbID] = m;
+      omdbCache[title] = m;
       return m;
     }
   } catch (_) {}
   return null;
 }
 
-/** Fetch a single movie by IMDB ID from OMDB */
-async function omdbById(imdbId) {
-  if (omdbCache[imdbId]) return omdbCache[imdbId];
+/** Fetch a single movie by IMDB ID or database ID from Backend */
+async function omdbById(id) {
+  if (omdbCache[id]) return omdbCache[id];
   try {
-    const url = `${OMDB_BASE}?apikey=${getOmdbKey()}&i=${imdbId}&type=movie&plot=full`;
-    const res  = await fetch(url);
-    const data = await res.json();
-    if (data.Response === 'True') {
-      const m = normaliseOmdb(data);
-      omdbCache[imdbId] = m;
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+    const endpoint = isObjectId ? `/movies/${id}` : `/movies/by-imdb/${id}`;
+    
+    const { ok, data } = await apiCall(endpoint);
+    if (ok && data.success && data.movie) {
+      const m = data.movie;
+      omdbCache[m._id] = m;
+      omdbCache[m.imdbID] = m;
       return m;
     }
   } catch (_) {}
   return null;
 }
 
-/** Search OMDB by keyword — returns array of results (basic info, no full plot) */
+/** Search Backend (which proxies OMDB & caches in MongoDB) */
 async function omdbSearch(query, page = 1) {
   try {
-    const url = `${OMDB_BASE}?apikey=${getOmdbKey()}&s=${encodeURIComponent(query)}&type=movie&page=${page}`;
-    const res  = await fetch(url);
-    const data = await res.json();
-    if (data.Response === 'True') {
-      // Enrich each result with full details
-      const full = await Promise.all(
-        data.Search.slice(0, 12).map(r => omdbById(r.imdbID))
-      );
-      return full.filter(Boolean);
+    const { ok, data } = await apiCall(`/movies/search?q=${encodeURIComponent(query)}&page=${page}`);
+    if (ok && data.success && data.movies) {
+      data.movies.forEach(m => {
+        omdbCache[m._id] = m;
+        omdbCache[m.imdbID] = m;
+      });
+      return data.movies;
     }
   } catch (_) {}
   return [];
@@ -1167,6 +1166,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (token && user) {
     state.token = token;
     state.user  = JSON.parse(user);
+    syncWatchlistFromServer();
   }
   renderNav();
   setupEnterKeyListeners();
@@ -1322,6 +1322,12 @@ async function apiCall(endpoint, method = 'GET', body = null) {
   const opts = { method, headers: { 'Content-Type': 'application/json' } };
   if (state.token && state.token !== 'demo-token')
     opts.headers['Authorization'] = `Bearer ${state.token}`;
+  
+  const key = getOmdbKey();
+  if (key) {
+    opts.headers['X-OMDB-Key'] = key;
+  }
+
   if (body) opts.body = JSON.stringify(body);
   try {
     const res  = await fetch(`${BACKEND}${endpoint}`, opts);
@@ -1395,10 +1401,32 @@ async function handleRegister() {
   btn.disabled = false; btn.textContent = 'Create Account';
 }
 
+async function syncWatchlistFromServer() {
+  if (!state.user || state.user._id === 'demo') return;
+  try {
+    const { ok, data } = await apiCall('/watchlist');
+    if (ok && data.success && data.items) {
+      localWatchlist = data.items.map(item => ({
+        movieId: item.movie._id,
+        type: item.type,
+        movie: item.movie,
+        addedAt: item.addedAt
+      }));
+      localStorage.setItem('omdb_watchlist', JSON.stringify(localWatchlist));
+      if (state.currentPage === 'profile') {
+        loadProfile();
+      }
+    }
+  } catch (err) {
+    console.error('Error syncing watchlist:', err);
+  }
+}
+
 function setSession(token, user) {
   state.token = token; state.user = user;
   localStorage.setItem('omdbToken', token);
   localStorage.setItem('omdbUser', JSON.stringify(user));
+  syncWatchlistFromServer();
 }
 
 function logout() {
@@ -1485,54 +1513,64 @@ async function loadDashboard() {
 // ── Trending ──────────────────────────────────────────
 async function loadTrending() {
   showSkeletons('trendingMovies', 6);
-  
-  let titles = TRENDING_TITLES;
-  if (state.selectedLanguage && state.selectedLanguage !== 'All') {
-    titles = (LANGUAGE_PRESETS[state.selectedLanguage] || []).slice(0, 5);
+  try {
+    let titles = TRENDING_TITLES;
+    if (state.selectedLanguage && state.selectedLanguage !== 'All') {
+      titles = (LANGUAGE_PRESETS[state.selectedLanguage] || []).slice(0, 5);
+    }
+    
+    const movies = await omdbMulti(titles);
+    movies.forEach(m => m.trending = true);
+    state.trendingMovies = movies;
+    
+    renderMoviesRow('trendingMovies', movies);
+  } catch (err) {
+    console.error('Error loading trending:', err);
+    document.getElementById('trendingMovies').innerHTML = 
+      `<div class="empty-state"><p>Could not load trending movies. Please try again.</p></div>`;
   }
-  
-  const movies = await omdbMulti(titles);
-  movies.forEach(m => m.trending = true);
-  state.trendingMovies = movies;
-  
-  renderMoviesRow('trendingMovies', movies);
 }
 
 // ── All Movies (paginated in chunks of 10) ────────────
 const PAGE_SIZE = 10;
 async function loadAllMovies(genre = '') {
   showSkeletons('allMovies', 10);
-
-  let titles;
-  if (genre && GENRE_TITLES[genre]) {
-    titles = GENRE_TITLES[genre];
-    document.getElementById('loadMoreContainer').style.display = 'none';
-  } else {
-    // If a specific language is selected, load the preset titles for that language
-    if (state.selectedLanguage && state.selectedLanguage !== 'All') {
-      const langTitles = LANGUAGE_PRESETS[state.selectedLanguage] || [];
-      const movies = await omdbMulti(langTitles);
-      const filtered = movies.filter(m => m.language && m.language.toLowerCase().includes(state.selectedLanguage.toLowerCase()));
-      state.movies = filtered;
+  try {
+    let titles;
+    if (genre && GENRE_TITLES[genre]) {
+      titles = GENRE_TITLES[genre];
       document.getElementById('loadMoreContainer').style.display = 'none';
-      renderMoviesGrid('allMovies', filtered);
-      return;
+    } else {
+      // If a specific language is selected, load the preset titles for that language
+      if (state.selectedLanguage && state.selectedLanguage !== 'All') {
+        const langTitles = LANGUAGE_PRESETS[state.selectedLanguage] || [];
+        const movies = await omdbMulti(langTitles);
+        const filtered = movies.filter(m => m.language && m.language.toLowerCase().includes(state.selectedLanguage.toLowerCase()));
+        state.movies = filtered;
+        document.getElementById('loadMoreContainer').style.display = 'none';
+        renderMoviesGrid('allMovies', filtered);
+        return;
+      }
+
+      const start = (state.omdbPage - 1) * PAGE_SIZE;
+      titles = ALL_TITLES.slice(start, start + PAGE_SIZE);
+      document.getElementById('loadMoreContainer').style.display =
+        start + PAGE_SIZE < ALL_TITLES.length ? 'block' : 'none';
     }
 
-    const start = (state.omdbPage - 1) * PAGE_SIZE;
-    titles = ALL_TITLES.slice(start, start + PAGE_SIZE);
-    document.getElementById('loadMoreContainer').style.display =
-      start + PAGE_SIZE < ALL_TITLES.length ? 'block' : 'none';
-  }
+    const newMovies = await omdbMulti(titles);
 
-  const newMovies = await omdbMulti(titles);
-
-  if (state.omdbPage === 1 || genre) {
-    state.movies = newMovies;
-  } else {
-    state.movies = [...state.movies, ...newMovies];
+    if (state.omdbPage === 1 || genre) {
+      state.movies = newMovies;
+    } else {
+      state.movies = [...state.movies, ...newMovies];
+    }
+    renderMoviesGrid('allMovies', state.movies);
+  } catch (err) {
+    console.error('Error loading all movies:', err);
+    document.getElementById('allMovies').innerHTML = 
+      `<div class="empty-state" style="grid-column:1/-1"><p>Could not load movies. Please try again.</p></div>`;
   }
-  renderMoviesGrid('allMovies', state.movies);
 }
 
 async function loadMoreMovies() {
@@ -1551,48 +1589,54 @@ async function loadRecommendations() {
   const prefs = state.user?.preferences?.genres || [];
   showSkeletons('recommendedMovies', 6, true);
 
-  let picks = [];
-  if (prefs.length > 0) {
-    // Fetch a few titles per preferred genre
-    const pool = prefs.flatMap(g => (GENRE_TITLES[g] || []).slice(0, 3));
-    // Remove duplicates and shuffle
-    const unique = [...new Set(pool)].sort(() => Math.random() - 0.5).slice(0, 10);
-    picks = await omdbMulti(unique);
-  }
-
-  if (picks.length < 4) {
-    // Top-rated fallback
-    const fallback = await omdbMulti(
-      ['The Godfather','Schindler\'s List','The Dark Knight','Pulp Fiction','12 Angry Men']
-    );
-    picks = [...picks, ...fallback].slice(0, 10);
-  }
-
-  // Prioritize / Filter by selected language
-  if (state.selectedLanguage && state.selectedLanguage !== 'All') {
-    const langLower = state.selectedLanguage.toLowerCase();
-    let langFiltered = picks.filter(m => m.language && m.language.toLowerCase().includes(langLower));
-    
-    // If not enough matches, search the broader curated list for this language
-    if (langFiltered.length < 6) {
-      const allCuratedTitles = [...new Set([
-        ...ALL_TITLES,
-        ...TRENDING_TITLES,
-        ...Object.values(GENRE_TITLES).flat()
-      ])];
-      const allMoviesPool = await omdbMulti(allCuratedTitles);
-      const extraMatches = allMoviesPool.filter(m => 
-        m.language && 
-        m.language.toLowerCase().includes(langLower) && 
-        !langFiltered.some(p => p._id === m._id)
-      );
-      picks = [...langFiltered, ...extraMatches].slice(0, 10);
-    } else {
-      picks = langFiltered;
+  try {
+    let picks = [];
+    if (prefs.length > 0) {
+      // Fetch a few titles per preferred genre
+      const pool = prefs.flatMap(g => (GENRE_TITLES[g] || []).slice(0, 3));
+      // Remove duplicates and shuffle
+      const unique = [...new Set(pool)].sort(() => Math.random() - 0.5).slice(0, 10);
+      picks = await omdbMulti(unique);
     }
-  }
 
-  renderMoviesRow('recommendedMovies', picks);
+    if (picks.length < 4) {
+      // Top-rated fallback
+      const fallback = await omdbMulti(
+        ['The Godfather','Schindler\'s List','The Dark Knight','Pulp Fiction','12 Angry Men']
+      );
+      picks = [...picks, ...fallback].slice(0, 10);
+    }
+
+    // Prioritize / Filter by selected language
+    if (state.selectedLanguage && state.selectedLanguage !== 'All') {
+      const langLower = state.selectedLanguage.toLowerCase();
+      let langFiltered = picks.filter(m => m.language && m.language.toLowerCase().includes(langLower));
+      
+      // If not enough matches, search the broader curated list for this language
+      if (langFiltered.length < 6) {
+        const allCuratedTitles = [...new Set([
+          ...ALL_TITLES,
+          ...TRENDING_TITLES,
+          ...Object.values(GENRE_TITLES).flat()
+        ])];
+        const allMoviesPool = await omdbMulti(allCuratedTitles);
+        const extraMatches = allMoviesPool.filter(m => 
+          m.language && 
+          m.language.toLowerCase().includes(langLower) && 
+          !langFiltered.some(p => p._id === m._id)
+        );
+        picks = [...langFiltered, ...extraMatches].slice(0, 10);
+      } else {
+        picks = langFiltered;
+      }
+    }
+
+    renderMoviesRow('recommendedMovies', picks);
+  } catch (err) {
+    console.error('Error loading recommendations:', err);
+    document.getElementById('recommendedMovies').innerHTML = 
+      `<div class="empty-state"><p>Could not load recommendations.</p></div>`;
+  }
 }
 
 // ── Genre Filter ──────────────────────────────────────
@@ -1712,11 +1756,12 @@ function renderMoviesRow(containerId, movies) {
 
 function movieCardHTML(movie, compact = false) {
   const safeId = CSS.escape ? CSS.escape(movie._id) : movie._id;
-  const poster  = movie.posterPath
+  const hasPoster = movie.posterPath && movie.posterPath !== 'N/A' && movie.posterPath !== 'null';
+  const poster = hasPoster
     ? `<img class="movie-poster" src="${movie.posterPath}" alt="${movie.title}"
          loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
     : '';
-  const placeholder = `<div class="movie-poster-placeholder" ${movie.posterPath ? 'style="display:none"' : ''}>🎬</div>`;
+  const placeholder = `<div class="movie-poster-placeholder" ${hasPoster ? 'style="display:none"' : ''}>🎬</div>`;
   const genres  = (movie.genres || []).slice(0, 2).map(g => `<span class="genre-badge">${g}</span>`).join('');
   const wlState = localWatchlist.find(w => w.movieId === movie._id && w.type === 'watchlist');
   const fvState = localWatchlist.find(w => w.movieId === movie._id && w.type === 'favorite');
@@ -1789,11 +1834,11 @@ async function openMovieModal(imdbId) {
   currentModalMovie = movie;
 
   // Poster as backdrop blur
-  const backdropSrc = movie.posterPath;
+  const hasPoster = movie.posterPath && movie.posterPath !== 'N/A' && movie.posterPath !== 'null';
   const headerBackdrop = document.getElementById('modalHeaderBackdrop');
-  if (backdropSrc) {
+  if (hasPoster) {
     headerBackdrop.innerHTML =
-      `<img class="modal-backdrop-blur-img" src="${backdropSrc}" alt="${movie.title}">
+      `<img class="modal-backdrop-blur-img" src="${movie.posterPath}" alt="${movie.title}">
        <div class="modal-backdrop-overlay-blur"></div>
        <button class="modal-close" onclick="closeMovieModal()">✕</button>`;
   } else {
@@ -1805,7 +1850,7 @@ async function openMovieModal(imdbId) {
 
   // Render Left Side Poster
   const posterSide = document.getElementById('modalPosterSide');
-  if (movie.posterPath) {
+  if (hasPoster) {
     posterSide.innerHTML = `<img src="${movie.posterPath}" alt="${movie.title}" onerror="this.parentNode.innerHTML='<div class=&quot;modal-poster-placeholder-side&quot;>🎬</div>'">`;
   } else {
     posterSide.innerHTML = `<div class="modal-poster-placeholder-side">🎬</div>`;
@@ -1822,9 +1867,11 @@ async function openMovieModal(imdbId) {
     ${movie.runtime     ? `<span>⏱ ${movie.runtime} min</span>` : ''}
     ${movie.rated       ? `<span class="genre-badge">${movie.rated}</span>` : ''}
     ${movie.language    ? `<span>🌐 ${movie.language}</span>` : ''}
+    ${movie.country     ? `<span>📍 ${movie.country}</span>` : ''}
     <span style="color:var(--accent)">${(movie.genres || []).join(' · ')}</span>
     ${movie.boxOffice   ? `<span style="color:var(--gold)">💰 ${movie.boxOffice}</span>` : ''}
     ${movie.awards      ? `<span style="color:var(--text2);font-size:12px">🏆 ${movie.awards}</span>` : ''}
+    ${movie.imdbID      ? `<span style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">ID: ${movie.imdbID}</span>` : ''}
   `;
   document.getElementById('modalOverview').textContent = movie.overview;
 

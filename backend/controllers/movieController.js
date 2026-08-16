@@ -2,6 +2,87 @@
 const Movie = require('../models/Movie');
 const User = require('../models/User');
 const Watchlist = require('../models/Watchlist');
+const https = require('https');
+
+// Helper to fetch from OMDb using https module
+const fetchOmdb = (queryStr, req = null) => {
+  const customKey = req && req.headers ? req.headers['x-omdb-key'] : null;
+  const apiKey = customKey || process.env.OMDB_API_KEY || '5ad1e514';
+  const baseUrl = process.env.OMDB_BASE_URL || 'https://www.omdbapi.com/';
+  const url = `${baseUrl}?apikey=${apiKey}&${queryStr}`;
+  
+  return new Promise((resolve) => {
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          resolve(parsed);
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    }).on('error', () => {
+      resolve(null);
+    });
+  });
+};
+
+// Helper to normalise and save an OMDb movie to our database
+const normaliseAndSaveMovie = async (omdbData) => {
+  if (!omdbData || omdbData.Response === 'False') return null;
+
+  const title = omdbData.Title;
+  const imdbID = omdbData.imdbID;
+  if (!title || !imdbID) return null;
+
+  try {
+    // Check if already exists to avoid duplication
+    let movie = await Movie.findOne({ imdbID });
+    if (movie) return movie;
+
+    const rating = parseFloat(omdbData.imdbRating) || 0;
+    const genres = omdbData.Genre
+      ? omdbData.Genre.split(',').map(g => g.trim()).filter(Boolean)
+      : [];
+    const cast = omdbData.Actors
+      ? omdbData.Actors.split(',').map(a => a.trim()).filter(a => a !== 'N/A')
+      : [];
+    const year = parseInt(omdbData.Year) || null;
+    const runtime = parseInt((omdbData.Runtime || '').replace(' min', '')) || 0;
+    const voteCount = parseInt((omdbData.imdbVotes || '0').replace(/,/g, '')) || 0;
+
+    // Professional placeholder for empty/unavailable poster URLs
+    const posterPath = (omdbData.Poster && omdbData.Poster !== 'N/A') 
+      ? omdbData.Poster 
+      : '';
+
+    movie = new Movie({
+      imdbID,
+      title,
+      overview: omdbData.Plot !== 'N/A' ? omdbData.Plot : 'No description available.',
+      genres,
+      language: omdbData.Language ? omdbData.Language.split(',')[0].trim() : 'English',
+      releaseYear: year,
+      rating,
+      voteCount,
+      posterPath,
+      backdropPath: '',
+      director: omdbData.Director !== 'N/A' ? omdbData.Director : 'Unknown',
+      cast,
+      runtime,
+      popularity: rating * 10,
+      trending: false
+    });
+
+    await movie.save();
+    return movie;
+  } catch (err) {
+    console.error(`Error saving movie ${title}:`, err);
+    return null;
+  }
+};
 
 // @desc    Get all movies (with filters)
 // @route   GET /api/movies
@@ -60,7 +141,7 @@ const getTrending = async (req, res, next) => {
   }
 };
 
-// @desc    Search movies by title
+// @desc    Search movies by title (live proxy with local cache)
 // @route   GET /api/movies/search?q=query
 // @access  Public
 const searchMovies = async (req, res, next) => {
@@ -74,29 +155,49 @@ const searchMovies = async (req, res, next) => {
       });
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    // Call OMDb API search endpoint
+    console.log(`[Search] Query: "${q}", Page: ${page}`);
+    const queryStr = `s=${encodeURIComponent(q.trim())}&type=movie&page=${page}`;
+    const searchData = await fetchOmdb(queryStr, req);
+    console.log(`[Search] OMDb API search response:`, searchData);
 
-    // Use regex for flexible partial matching
-    const searchRegex = new RegExp(q.trim(), 'i');
-    const query = {
-      $or: [
-        { title: searchRegex },
-        { director: searchRegex },
-        { cast: searchRegex },
-        { overview: searchRegex }
-      ]
-    };
+    let movies = [];
+    if (searchData && searchData.Response === 'True' && searchData.Search) {
+      // Fetch full details and save/cache each movie
+      movies = await Promise.all(
+        searchData.Search.slice(0, parseInt(limit)).map(async (item) => {
+          try {
+            // First check if already in db
+            let dbMovie = await Movie.findOne({ imdbID: item.imdbID });
+            if (dbMovie) return dbMovie;
 
-    const [movies, total] = await Promise.all([
-      Movie.find(query).skip(skip).limit(parseInt(limit)),
-      Movie.countDocuments(query)
-    ]);
+            // Fetch details and save
+            const detailData = await fetchOmdb(`i=${item.imdbID}&plot=full`, req);
+            return await normaliseAndSaveMovie(detailData);
+          } catch (_) {
+            return null;
+          }
+        })
+      );
+      movies = movies.filter(Boolean);
+    }
+
+    // Fallback: If OMDb fails, search the local database using regex as a backup
+    if (movies.length === 0) {
+      const searchRegex = new RegExp(q.trim(), 'i');
+      movies = await Movie.find({
+        $or: [
+          { title: searchRegex },
+          { director: searchRegex },
+          { cast: searchRegex }
+        ]
+      }).limit(parseInt(limit));
+    }
 
     res.json({
       success: true,
       query: q,
       count: movies.length,
-      total,
       movies
     });
   } catch (error) {
@@ -159,7 +260,7 @@ const getRecommendations = async (req, res, next) => {
   }
 };
 
-// @desc    Get single movie by ID
+// @desc    Get single movie by DB ID
 // @route   GET /api/movies/:id
 // @access  Public
 const getMovieById = async (req, res, next) => {
@@ -173,16 +274,66 @@ const getMovieById = async (req, res, next) => {
       });
     }
 
-    // Track recently viewed if user is logged in
-    if (req.user) {
-      await User.findByIdAndUpdate(req.user._id, {
-        $push: {
-          recentlyViewed: {
-            $each: [{ movie: movie._id, viewedAt: new Date() }],
-            $slice: -20, // Keep only last 20
-            $position: 0
-          }
-        }
+    res.json({ success: true, movie });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get single movie by IMDB ID
+// @route   GET /api/movies/by-imdb/:imdbId
+// @access  Public
+const getMovieByImdbId = async (req, res, next) => {
+  try {
+    const { imdbId } = req.params;
+    
+    // Check database
+    let movie = await Movie.findOne({ imdbID: imdbId });
+    if (movie) {
+      return res.json({ success: true, movie });
+    }
+
+    // Fetch from OMDb
+    const detailData = await fetchOmdb(`i=${imdbId}&plot=full`, req);
+    movie = await normaliseAndSaveMovie(detailData);
+
+    if (!movie) {
+      return res.status(404).json({
+        success: false,
+        message: 'Movie not found'
+      });
+    }
+
+    res.json({ success: true, movie });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get single movie by Title
+// @route   GET /api/movies/by-title
+// @access  Public
+const getMovieByTitle = async (req, res, next) => {
+  try {
+    const { title } = req.query;
+    if (!title) {
+      return res.status(400).json({ success: false, message: 'Title is required' });
+    }
+
+    // Check database
+    let movie = await Movie.findOne({ title: new RegExp(`^${title.trim()}$`, 'i') });
+    if (movie) {
+      return res.json({ success: true, movie });
+    }
+
+    // Fetch from OMDb
+    const detailData = await fetchOmdb(`t=${encodeURIComponent(title.trim())}&plot=full`, req);
+    movie = await normaliseAndSaveMovie(detailData);
+
+    if (!movie) {
+      return res.status(404).json({
+        success: false,
+        message: 'Movie not found'
       });
     }
 
@@ -210,5 +361,7 @@ module.exports = {
   searchMovies,
   getRecommendations,
   getMovieById,
+  getMovieByImdbId,
+  getMovieByTitle,
   getGenres
 };

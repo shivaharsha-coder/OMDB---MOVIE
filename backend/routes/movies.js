@@ -7,6 +7,8 @@ const {
   searchMovies,
   getRecommendations,
   getMovieById,
+  getMovieByImdbId,
+  getMovieByTitle,
   getGenres
 } = require('../controllers/movieController');
 const { protect } = require('../middleware/auth');
@@ -16,6 +18,8 @@ router.get('/', getMovies);
 router.get('/trending', getTrending);
 router.get('/search', searchMovies);
 router.get('/genres', getGenres);
+router.get('/by-imdb/:imdbId', getMovieByImdbId);
+router.get('/by-title', getMovieByTitle);
 
 // Protected routes
 router.get('/recommendations', protect, getRecommendations);

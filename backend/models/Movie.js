@@ -7,6 +7,12 @@ const movieSchema = new mongoose.Schema({
     unique: true,
     sparse: true // Allow null/undefined
   },
+  imdbID: {
+    type: String,
+    unique: true,
+    sparse: true,
+    index: true
+  },
   title: {
     type: String,
     required: [true, 'Movie title is required'],
